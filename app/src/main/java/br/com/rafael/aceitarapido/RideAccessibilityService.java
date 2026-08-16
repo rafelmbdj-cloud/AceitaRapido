@@ -14,6 +14,8 @@ public final class RideAccessibilityService extends AccessibilityService {
     private AppPrefs prefs;
     private long lastClickAt;
     private String lastDecision = "";
+    private boolean armed = true;
+    private boolean wasEnabled;
 
     @Override public void onServiceConnected() {
         prefs = new AppPrefs(this);
@@ -25,33 +27,52 @@ public final class RideAccessibilityService extends AccessibilityService {
 
     @Override public void onAccessibilityEvent(AccessibilityEvent event) {
         if (prefs == null) prefs = new AppPrefs(this);
-        if (!prefs.enabled()) return;
+        if (!prefs.enabled()) {
+            armed = true;
+            lastDecision = "";
+            wasEnabled = false;
+            return;
+        }
+        if (!wasEnabled) {
+            armed = true;
+            lastDecision = "";
+            wasEnabled = true;
+        }
         long now = SystemClock.elapsedRealtime();
-        if (now - lastClickAt < 1800) return;
 
         List<AccessibilityNodeInfo> roots = activeRoots();
         List<String> texts = new ArrayList<>();
         for (AccessibilityNodeInfo root : roots) collectTexts(root, texts);
         String decision = findDecision(texts);
-        if (decision.isEmpty()) { lastDecision = ""; return; }
-        if (decision.equals("RUIM")) {
-            prefs.setLastStatus("RUIM: deixada tocando para decisão manual");
-            return;
-        }
-        if (decision.equals("EXCELENTE") && !prefs.acceptExcellent()) return;
-        if (decision.equals("NORMAL") && !prefs.acceptNormal()) return;
-        if (decision.equals(lastDecision) && now - lastClickAt < 8000) return;
-
         AccessibilityNodeInfo accept = null;
         for (AccessibilityNodeInfo root : roots) {
             accept = findAcceptButton(root);
             if (accept != null) break;
         }
-        if (accept == null) {
-            prefs.setLastStatus(decision + " detectada; aguardando botão ACEITAR");
+
+        // A oferta terminou: prepara o serviço para a próxima corrida.
+        if (decision.isEmpty() || accept == null) {
+            armed = true;
+            lastDecision = "";
+            if (!decision.isEmpty()) {
+                prefs.setLastStatus(decision + " detectada; aguardando botão ACEITAR");
+            }
             return;
         }
+        if (decision.equals("RUIM")) {
+            armed = true;
+            prefs.setLastStatus("RUIM: deixada tocando para decisão manual");
+            return;
+        }
+        if (decision.equals("EXCELENTE") && !prefs.acceptExcellent()) return;
+        if (decision.equals("NORMAL") && !prefs.acceptNormal()) return;
+        if (!armed && now - lastClickAt < 12000) return;
+        // Segurança de recuperação: se o Android não avisou que a tela anterior
+        // desapareceu, libera novamente após 12 segundos.
+        if (!armed) armed = true;
+        if (now - lastClickAt < 1800) return;
         if (clickNodeOrParent(accept)) {
+            armed = false;
             lastDecision = decision;
             lastClickAt = now;
             prefs.setLastStatus(decision + ": botão ACEITAR acionado");

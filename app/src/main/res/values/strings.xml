@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Aceita Rápido</string>
+    <string name="accessibility_description">Lê ofertas do aplicativo configurado e toca em Aceitar apenas quando todos os critérios forem atendidos.</string>
+</resources>

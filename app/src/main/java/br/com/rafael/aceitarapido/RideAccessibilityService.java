@@ -3,6 +3,8 @@ package br.com.rafael.aceitarapido;
 import android.accessibilityservice.AccessibilityService;
 import android.accessibilityservice.AccessibilityServiceInfo;
 import android.os.SystemClock;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.accessibility.AccessibilityWindowInfo;
@@ -13,9 +15,14 @@ import java.util.Locale;
 public final class RideAccessibilityService extends AccessibilityService {
     private AppPrefs prefs;
     private long lastClickAt;
-    private String lastDecision = "";
-    private boolean armed = true;
-    private boolean wasEnabled;
+    private final Handler handler = new Handler(Looper.getMainLooper());
+    private boolean scanning;
+    private final Runnable scanner = new Runnable() {
+        @Override public void run() {
+            scanAndAccept();
+            handler.postDelayed(this, 350);
+        }
+    };
 
     @Override public void onServiceConnected() {
         prefs = new AppPrefs(this);
@@ -23,22 +30,22 @@ public final class RideAccessibilityService extends AccessibilityService {
         info.flags |= AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS;
         setServiceInfo(info);
         prefs.setLastStatus("Acessibilidade conectada");
+        if (!scanning) {
+            scanning = true;
+            handler.post(scanner);
+        }
     }
 
     @Override public void onAccessibilityEvent(AccessibilityEvent event) {
+        scanAndAccept();
+    }
+
+    private void scanAndAccept() {
         if (prefs == null) prefs = new AppPrefs(this);
-        if (!prefs.enabled()) {
-            armed = true;
-            lastDecision = "";
-            wasEnabled = false;
-            return;
-        }
-        if (!wasEnabled) {
-            armed = true;
-            lastDecision = "";
-            wasEnabled = true;
-        }
+        if (!prefs.enabled()) return;
         long now = SystemClock.elapsedRealtime();
+        // Evita dois toques na mesma oferta, mas libera rapidamente a próxima.
+        if (now - lastClickAt < 2500) return;
 
         List<AccessibilityNodeInfo> roots = activeRoots();
         List<String> texts = new ArrayList<>();
@@ -50,30 +57,19 @@ public final class RideAccessibilityService extends AccessibilityService {
             if (accept != null) break;
         }
 
-        // A oferta terminou: prepara o serviço para a próxima corrida.
         if (decision.isEmpty() || accept == null) {
-            armed = true;
-            lastDecision = "";
             if (!decision.isEmpty()) {
                 prefs.setLastStatus(decision + " detectada; aguardando botão ACEITAR");
             }
             return;
         }
         if (decision.equals("RUIM")) {
-            armed = true;
             prefs.setLastStatus("RUIM: deixada tocando para decisão manual");
             return;
         }
         if (decision.equals("EXCELENTE") && !prefs.acceptExcellent()) return;
         if (decision.equals("NORMAL") && !prefs.acceptNormal()) return;
-        if (!armed && now - lastClickAt < 12000) return;
-        // Segurança de recuperação: se o Android não avisou que a tela anterior
-        // desapareceu, libera novamente após 12 segundos.
-        if (!armed) armed = true;
-        if (now - lastClickAt < 1800) return;
         if (clickNodeOrParent(accept)) {
-            armed = false;
-            lastDecision = decision;
             lastClickAt = now;
             prefs.setLastStatus(decision + ": botão ACEITAR acionado");
         }
@@ -81,6 +77,12 @@ public final class RideAccessibilityService extends AccessibilityService {
 
     @Override public void onInterrupt() {
         if (prefs != null) prefs.setLastStatus("Serviço interrompido pelo Android");
+    }
+
+    @Override public void onDestroy() {
+        handler.removeCallbacks(scanner);
+        scanning = false;
+        super.onDestroy();
     }
 
     private List<AccessibilityNodeInfo> activeRoots() {

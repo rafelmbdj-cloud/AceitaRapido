@@ -5,6 +5,8 @@ import android.accessibilityservice.AccessibilityServiceInfo;
 import android.os.SystemClock;
 import android.os.Handler;
 import android.os.Looper;
+import android.media.AudioManager;
+import android.media.ToneGenerator;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.accessibility.AccessibilityWindowInfo;
@@ -72,6 +74,7 @@ public final class RideAccessibilityService extends AccessibilityService {
         if (clickNodeOrParent(accept)) {
             lastClickAt = now;
             prefs.setLastStatus(decision + ": botão ACEITAR acionado");
+            playAcceptedBeep();
         }
     }
 
@@ -131,5 +134,11 @@ public final class RideAccessibilityService extends AccessibilityService {
             current = current.getParent();
         }
         return node.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+    }
+
+    private void playAcceptedBeep() {
+        ToneGenerator tone = new ToneGenerator(AudioManager.STREAM_NOTIFICATION, 100);
+        tone.startTone(ToneGenerator.TONE_PROP_BEEP, 350);
+        handler.postDelayed(tone::release, 500);
     }
 }

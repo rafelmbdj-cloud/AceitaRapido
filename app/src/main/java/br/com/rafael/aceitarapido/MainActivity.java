@@ -2,6 +2,9 @@ package br.com.rafael.aceitarapido;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.media.AudioManager;
+import android.media.ToneGenerator;
+import android.net.Uri;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.provider.Settings;
@@ -10,8 +13,15 @@ import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.Switch;
 import android.widget.TextView;
+import android.widget.Toast;
+import com.google.mlkit.vision.common.InputImage;
+import com.google.mlkit.vision.text.TextRecognition;
+import com.google.mlkit.vision.text.latin.TextRecognizerOptions;
+import java.io.IOException;
+import java.util.Locale;
 
 public final class MainActivity extends Activity {
+    private static final int PICK_SCREENSHOT = 42;
     private AppPrefs prefs;
     private Switch master, excellent, normal;
     private TextView status;
@@ -69,10 +79,62 @@ public final class MainActivity extends Activity {
         access.setOnClickListener(v -> startActivity(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)));
         root.addView(access, new LinearLayout.LayoutParams(-1, dp(54)));
 
+        Button analyze = new Button(this);
+        analyze.setText("ANALISAR PRINT DA CORRIDA");
+        analyze.setTextColor(Color.WHITE);
+        analyze.setBackgroundColor(Color.rgb(37, 99, 235));
+        analyze.setOnClickListener(v -> {
+            Intent pick = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+            pick.setType("image/*");
+            pick.addCategory(Intent.CATEGORY_OPENABLE);
+            startActivityForResult(pick, PICK_SCREENSHOT);
+        });
+        LinearLayout.LayoutParams analyzeParams = new LinearLayout.LayoutParams(-1, dp(54));
+        analyzeParams.setMargins(0, dp(12), 0, 0);
+        root.addView(analyze, analyzeParams);
+
         TextView help = text("1. Ative Aceita Rápido na acessibilidade.\n2. Deixe o Auto Clic das faixas ligado.\n3. Ligue o autoaceite acima.\n4. Abra o Rapidocar.\n\nEXCELENTE e NORMAL acionam ACEITAR uma única vez. RUIM continua tocando.", 15, false);
         help.setPadding(0, dp(18), 0, 0);
         root.addView(help);
         return scroll;
+    }
+
+    @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode != PICK_SCREENSHOT || resultCode != RESULT_OK || data == null) return;
+        Uri uri = data.getData();
+        if (uri == null) return;
+        status.setText("Status: analisando o print...");
+        try {
+            InputImage image = InputImage.fromFilePath(this, uri);
+            TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS).process(image)
+                    .addOnSuccessListener(result -> showScreenshotResult(result.getText()))
+                    .addOnFailureListener(error -> status.setText("Status: não foi possível ler esse print"));
+        } catch (IOException error) {
+            status.setText("Status: não foi possível abrir esse print");
+        }
+    }
+
+    private void showScreenshotResult(String textFound) {
+        String text = textFound.toUpperCase(Locale.ROOT);
+        if (text.contains("EXCELENTE")) {
+            status.setText("Status: PRINT EXCELENTE detectado — teste aprovado");
+            playTestBeep();
+        } else if (text.contains("NORMAL") || text.contains("BOA")) {
+            status.setText("Status: PRINT NORMAL/BOA detectado — teste aprovado");
+            playTestBeep();
+        } else if (text.contains("RUIM")) {
+            status.setText("Status: PRINT RUIM detectado — sem bipe");
+        } else {
+            status.setText("Status: o print não contém EXCELENTE, NORMAL, BOA ou RUIM");
+        }
+    }
+
+    private void playTestBeep() {
+        ToneGenerator tone = new ToneGenerator(AudioManager.STREAM_NOTIFICATION, 100);
+        tone.startTone(ToneGenerator.TONE_PROP_BEEP, 350);
+        status.postDelayed(tone::release, 500);
+        Toast.makeText(this, "Corrida boa detectada no print", Toast.LENGTH_SHORT).show();
     }
 
     private void refresh() {

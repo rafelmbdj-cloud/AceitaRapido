@@ -7,6 +7,8 @@ import android.os.Handler;
 import android.os.Looper;
 import android.media.AudioManager;
 import android.media.ToneGenerator;
+import android.graphics.Path;
+import android.accessibilityservice.GestureDescription;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.accessibility.AccessibilityWindowInfo;
@@ -19,6 +21,7 @@ public final class RideAccessibilityService extends AccessibilityService {
     private long lastClickAt;
     private final Handler handler = new Handler(Looper.getMainLooper());
     private boolean scanning;
+    private boolean gesturePending;
     private final Runnable scanner = new Runnable() {
         @Override public void run() {
             scanAndAccept();
@@ -59,18 +62,17 @@ public final class RideAccessibilityService extends AccessibilityService {
             if (accept != null) break;
         }
 
-        if (decision.isEmpty() || accept == null) {
-            if (!decision.isEmpty()) {
-                prefs.setLastStatus(decision + " detectada; aguardando botão ACEITAR");
-            }
-            return;
-        }
+        if (decision.isEmpty()) return;
         if (decision.equals("RUIM")) {
             prefs.setLastStatus("RUIM: deixada tocando para decisão manual");
             return;
         }
         if (decision.equals("EXCELENTE") && !prefs.acceptExcellent()) return;
         if (decision.equals("NORMAL") && !prefs.acceptNormal()) return;
+        if (accept == null) {
+            tapFixedAcceptArea(decision, now);
+            return;
+        }
         if (clickNodeOrParent(accept)) {
             lastClickAt = now;
             prefs.setLastStatus(decision + ": botão ACEITAR acionado");
@@ -140,5 +142,31 @@ public final class RideAccessibilityService extends AccessibilityService {
         ToneGenerator tone = new ToneGenerator(AudioManager.STREAM_NOTIFICATION, 100);
         tone.startTone(ToneGenerator.TONE_PROP_BEEP, 350);
         handler.postDelayed(tone::release, 500);
+    }
+
+    private void tapFixedAcceptArea(String decision, long now) {
+        if (gesturePending) return;
+        int width = getResources().getDisplayMetrics().widthPixels;
+        int height = getResources().getDisplayMetrics().heightPixels;
+        Path path = new Path();
+        path.moveTo(width * 0.50f, height * 0.93f);
+        GestureDescription gesture = new GestureDescription.Builder()
+                .addStroke(new GestureDescription.StrokeDescription(path, 0, 80))
+                .build();
+        gesturePending = true;
+        lastClickAt = now;
+        prefs.setLastStatus(decision + ": botão não exposto; enviando toque na área ACEITAR");
+        dispatchGesture(gesture, new GestureResultCallback() {
+            @Override public void onCompleted(GestureDescription gestureDescription) {
+                gesturePending = false;
+                prefs.setLastStatus(decision + ": toque na área ACEITAR concluído");
+                playAcceptedBeep();
+            }
+
+            @Override public void onCancelled(GestureDescription gestureDescription) {
+                gesturePending = false;
+                prefs.setLastStatus(decision + ": toque foi cancelado pelo Android");
+            }
+        }, handler);
     }
 }

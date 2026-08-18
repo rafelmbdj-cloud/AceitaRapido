@@ -2,13 +2,11 @@ package br.com.rafael.aceitarapido;
 
 import android.accessibilityservice.AccessibilityService;
 import android.accessibilityservice.AccessibilityServiceInfo;
-import android.os.SystemClock;
-import android.os.Handler;
-import android.os.Looper;
 import android.media.AudioManager;
 import android.media.ToneGenerator;
-import android.graphics.Path;
-import android.accessibilityservice.GestureDescription;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.SystemClock;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.accessibility.AccessibilityWindowInfo;
@@ -20,14 +18,6 @@ public final class RideAccessibilityService extends AccessibilityService {
     private AppPrefs prefs;
     private long lastClickAt;
     private final Handler handler = new Handler(Looper.getMainLooper());
-    private boolean scanning;
-    private boolean gesturePending;
-    private final Runnable scanner = new Runnable() {
-        @Override public void run() {
-            scanAndAccept();
-            handler.postDelayed(this, 350);
-        }
-    };
 
     @Override public void onServiceConnected() {
         prefs = new AppPrefs(this);
@@ -35,33 +25,18 @@ public final class RideAccessibilityService extends AccessibilityService {
         info.flags |= AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS;
         setServiceInfo(info);
         prefs.setLastStatus("Acessibilidade conectada");
-        if (!scanning) {
-            scanning = true;
-            handler.post(scanner);
-        }
     }
 
     @Override public void onAccessibilityEvent(AccessibilityEvent event) {
-        scanAndAccept();
-    }
-
-    private void scanAndAccept() {
         if (prefs == null) prefs = new AppPrefs(this);
         if (!prefs.enabled()) return;
         long now = SystemClock.elapsedRealtime();
-        // Evita dois toques na mesma oferta, mas libera rapidamente a próxima.
-        if (now - lastClickAt < 2500) return;
+        if (now - lastClickAt < 1800) return;
 
         List<AccessibilityNodeInfo> roots = activeRoots();
         List<String> texts = new ArrayList<>();
         for (AccessibilityNodeInfo root : roots) collectTexts(root, texts);
         String decision = findDecision(texts);
-        AccessibilityNodeInfo accept = null;
-        for (AccessibilityNodeInfo root : roots) {
-            accept = findAcceptButton(root);
-            if (accept != null) break;
-        }
-
         if (decision.isEmpty()) return;
         if (decision.equals("RUIM")) {
             prefs.setLastStatus("RUIM: deixada tocando para decisão manual");
@@ -69,8 +44,14 @@ public final class RideAccessibilityService extends AccessibilityService {
         }
         if (decision.equals("EXCELENTE") && !prefs.acceptExcellent()) return;
         if (decision.equals("NORMAL") && !prefs.acceptNormal()) return;
+
+        AccessibilityNodeInfo accept = null;
+        for (AccessibilityNodeInfo root : roots) {
+            accept = findAcceptButton(root);
+            if (accept != null) break;
+        }
         if (accept == null) {
-            tapFixedAcceptArea(decision, now);
+            prefs.setLastStatus(decision + " detectada; aguardando botão ACEITAR");
             return;
         }
         if (clickNodeOrParent(accept)) {
@@ -82,12 +63,6 @@ public final class RideAccessibilityService extends AccessibilityService {
 
     @Override public void onInterrupt() {
         if (prefs != null) prefs.setLastStatus("Serviço interrompido pelo Android");
-    }
-
-    @Override public void onDestroy() {
-        handler.removeCallbacks(scanner);
-        scanning = false;
-        super.onDestroy();
     }
 
     private List<AccessibilityNodeInfo> activeRoots() {
@@ -142,31 +117,5 @@ public final class RideAccessibilityService extends AccessibilityService {
         ToneGenerator tone = new ToneGenerator(AudioManager.STREAM_NOTIFICATION, 100);
         tone.startTone(ToneGenerator.TONE_PROP_BEEP, 350);
         handler.postDelayed(tone::release, 500);
-    }
-
-    private void tapFixedAcceptArea(String decision, long now) {
-        if (gesturePending) return;
-        int width = getResources().getDisplayMetrics().widthPixels;
-        int height = getResources().getDisplayMetrics().heightPixels;
-        Path path = new Path();
-        path.moveTo(width * 0.50f, height * 0.93f);
-        GestureDescription gesture = new GestureDescription.Builder()
-                .addStroke(new GestureDescription.StrokeDescription(path, 0, 80))
-                .build();
-        gesturePending = true;
-        lastClickAt = now;
-        prefs.setLastStatus(decision + ": botão não exposto; enviando toque na área ACEITAR");
-        dispatchGesture(gesture, new GestureResultCallback() {
-            @Override public void onCompleted(GestureDescription gestureDescription) {
-                gesturePending = false;
-                prefs.setLastStatus(decision + ": toque na área ACEITAR concluído");
-                playAcceptedBeep();
-            }
-
-            @Override public void onCancelled(GestureDescription gestureDescription) {
-                gesturePending = false;
-                prefs.setLastStatus(decision + ": toque foi cancelado pelo Android");
-            }
-        }, handler);
     }
 }

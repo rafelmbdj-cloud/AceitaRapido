@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Corrida Falada</string>
+    <string name="accessibility_description">Lê ofertas e fala os dados. Não aceita nem recusa corridas.</string>
+</resources>

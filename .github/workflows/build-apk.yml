@@ -1,10 +1,15 @@
-name: Gerar APK
+name: Gerar APKs
 on:
   workflow_dispatch:
   push:
     branches: [ main ]
+    paths:
+      - 'corrida-falada/**'
+      - 'settings.gradle.kts'
+      - 'build.gradle.kts'
+      - '.github/workflows/build-apk.yml'
 jobs:
-  build:
+  build-corrida-falada:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -15,9 +20,12 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
-      - run: gradle assembleDebug --stacktrace
+      - name: Testar parser do print
+        run: gradle :corrida-falada:testDebugUnitTest --stacktrace
+      - name: Compilar APK
+        run: gradle :corrida-falada:assembleDebug --stacktrace
       - uses: actions/upload-artifact@v4
         with:
-          name: AceitaRapido-APK
-          path: app/build/outputs/apk/debug/app-debug.apk
+          name: Corrida-Falada-APK
+          path: corrida-falada/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 14

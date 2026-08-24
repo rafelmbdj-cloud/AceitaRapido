@@ -292,6 +292,8 @@ class _MeetingOverview extends StatelessWidget {
   Widget build(BuildContext context) => Card(child: Padding(padding: const EdgeInsets.all(14), child: Column(children: [
     const _MeetingPart(icon: Icons.diamond_outlined, color: Color(0xff4f5b66), title: 'Tesouros da Palavra de Deus', subtitle: 'Ideia principal • textos • aplicação'),
     const Divider(),
+    const _MeetingPart(icon: Icons.search, color: Color(0xff65727d), title: 'Joias Espirituais', subtitle: 'Descobertas • contexto • como aplicar'),
+    const Divider(),
     const _MeetingPart(icon: Icons.forum_outlined, color: Color(0xffb08332), title: 'Faça Seu Melhor no Ministério', subtitle: 'Objetivo da lição • sugestão de conversa'),
     const Divider(),
     const _MeetingPart(icon: Icons.favorite_outline, color: Color(0xff8b5261), title: 'Nossa Vida Cristã', subtitle: 'Resumo • como usar na família e congregação'),
@@ -305,7 +307,32 @@ class _MeetingOverview extends StatelessWidget {
 class _MeetingPart extends StatelessWidget {
   const _MeetingPart({required this.icon, required this.color, required this.title, required this.subtitle});
   final IconData icon; final Color color; final String title, subtitle;
-  @override Widget build(BuildContext context) => ListTile(contentPadding: EdgeInsets.zero, leading: CircleAvatar(backgroundColor: color.withValues(alpha: .14), child: Icon(icon, color: color)), title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)), subtitle: Text(subtitle), trailing: const Icon(Icons.chevron_right));
+  @override Widget build(BuildContext context) => ListTile(contentPadding: EdgeInsets.zero, leading: CircleAvatar(backgroundColor: color.withValues(alpha: .14), child: Icon(icon, color: color)), title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)), subtitle: Text(subtitle), trailing: const Icon(Icons.chevron_right), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => StudyDetailPage(title: title, color: color))));
+}
+
+class StudyDetailPage extends StatelessWidget {
+  const StudyDetailPage({super.key, required this.title, required this.color});
+  final String title; final Color color;
+  @override Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: Text(title), backgroundColor: color, foregroundColor: Colors.white),
+    body: ListView(padding: const EdgeInsets.all(16), children: [
+      _StudyBlock(color: color, icon: Icons.lightbulb_outline, title: 'Resumo e explicação', text: 'Identifique a ideia central da matéria e explique com palavras simples. Observe o contexto dos textos e como cada ponto fortalece a ideia principal.'),
+      _StudyBlock(color: color, icon: Icons.compare_arrows, title: 'Uma comparação', text: 'Pense numa situação comum que tenha o mesmo princípio. Comparações curtas ajudam a visualizar o ensino e a lembrá-lo durante a semana.'),
+      _StudyBlock(color: color, icon: Icons.person_outline, title: 'Como aplicar no dia a dia', text: 'Escolha uma atitude específica que você pode praticar hoje. Pergunte-se: “O que devo começar, continuar ou evitar?”'),
+      _StudyBlock(color: color, icon: Icons.family_restroom, title: 'Como aplicar na família', text: 'Procure uma maneira bondosa de usar o princípio para ouvir melhor, demonstrar respeito, perdoar ou fortalecer a espiritualidade da família.'),
+      _StudyBlock(color: color, icon: Icons.groups_outlined, title: 'Como aplicar no campo', text: 'Transforme a ideia numa pergunta simples, escolha um texto principal e pense em como explicá-lo sem palavras difíceis.'),
+      _StudyBlock(color: color, icon: Icons.psychology_outlined, title: 'Perguntas para recordar', text: 'O que isso me ensina sobre Jeová? Qual é o princípio? Em que situação vou precisar dele? Como explicaria este ponto em trinta segundos?'),
+      const SizedBox(height: 8),
+      const TextField(maxLines: 7, decoration: InputDecoration(labelText: 'Minhas joias e anotações', hintText: 'Escreva palavras-chave e aplicações pessoais...')),
+      const SizedBox(height: 16),
+      FilledButton.icon(onPressed: () {}, icon: const Icon(Icons.mic_none), label: const Text('Perguntar ao assistente — em breve')),
+    ]));
+}
+
+class _StudyBlock extends StatelessWidget {
+  const _StudyBlock({required this.color, required this.icon, required this.title, required this.text});
+  final Color color; final IconData icon; final String title, text;
+  @override Widget build(BuildContext context) => Padding(padding: const EdgeInsets.only(bottom: 12), child: Card(color: color.withValues(alpha: .10), child: Padding(padding: const EdgeInsets.all(15), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Row(children: [Icon(icon, color: color), const SizedBox(width: 9), Expanded(child: Text(title, style: TextStyle(fontWeight: FontWeight.bold, color: color, fontSize: 16)))]), const SizedBox(height: 8), Text(text)]))));
 }
 
 class _AssistantPreview extends StatelessWidget {

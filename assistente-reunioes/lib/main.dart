@@ -25,7 +25,7 @@ class MeetingAssistantApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: seed),
         useMaterial3: true,
-        scaffoldBackgroundColor: const Color(0xfff4f6fa),
+        scaffoldBackgroundColor: const Color(0xffdfe9f5),
         cardTheme: const CardThemeData(elevation: 0, margin: EdgeInsets.zero),
         inputDecorationTheme: const InputDecorationTheme(
           border: OutlineInputBorder(),
@@ -149,13 +149,9 @@ class _HomePageState extends State<HomePage> {
         actions: [IconButton(onPressed: _showInfo, icon: const Icon(Icons.info_outline))],
       ),
       body: SafeArea(child: pages[_tab]),
-      floatingActionButton: _tab < 2
-          ? FloatingActionButton.extended(
-              onPressed: _newAssignment,
-              icon: const Icon(Icons.add),
-              label: const Text('Designação'),
-            )
-          : null,
+      floatingActionButton: _tab == 0
+          ? FloatingActionButton.extended(onPressed: () => showModalBottomSheet(context: context, builder: (_) => const _AssistantPreview()), icon: const Icon(Icons.mic), label: const Text('Perguntar'))
+          : _tab == 1 ? FloatingActionButton.extended(onPressed: _newAssignment, icon: const Icon(Icons.add), label: const Text('Designação')) : null,
       bottomNavigationBar: NavigationBar(
         selectedIndex: _tab,
         onDestinationSelected: (value) => setState(() => _tab = value),
@@ -310,6 +306,19 @@ class _MeetingPart extends StatelessWidget {
   const _MeetingPart({required this.icon, required this.color, required this.title, required this.subtitle});
   final IconData icon; final Color color; final String title, subtitle;
   @override Widget build(BuildContext context) => ListTile(contentPadding: EdgeInsets.zero, leading: CircleAvatar(backgroundColor: color.withValues(alpha: .14), child: Icon(icon, color: color)), title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)), subtitle: Text(subtitle), trailing: const Icon(Icons.chevron_right));
+}
+
+class _AssistantPreview extends StatelessWidget {
+  const _AssistantPreview();
+  @override Widget build(BuildContext context) => Padding(padding: const EdgeInsets.all(24), child: SafeArea(child: Column(mainAxisSize: MainAxisSize.min, children: [
+    const CircleAvatar(radius: 30, backgroundColor: Color(0xff315f9b), child: Icon(Icons.auto_awesome, color: Colors.white, size: 30)),
+    const SizedBox(height: 12),
+    const Text('Assistente de estudo', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+    const SizedBox(height: 8),
+    const Text('O microfone ficará aqui. Na próxima etapa, ele poderá responder usando o texto diário ou a parte da reunião que estiver aberta.', textAlign: TextAlign.center),
+    const SizedBox(height: 16),
+    FilledButton.icon(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.mic_none), label: const Text('Ativação futura')),
+  ])));
 }
 
 class _WeekPage extends StatelessWidget {

@@ -313,12 +313,15 @@ class _MeetingPart extends StatelessWidget {
 class StudyDetailPage extends StatelessWidget {
   const StudyDetailPage({super.key, required this.title, required this.color});
   final String title; final Color color;
-  @override Widget build(BuildContext context) => Scaffold(
+  @override Widget build(BuildContext context) {
+    final c = _weeklyStudy(title);
+    return Scaffold(
     appBar: AppBar(title: Text(title), backgroundColor: color, foregroundColor: Colors.white),
     body: ListView(padding: const EdgeInsets.all(16), children: [
-      _StudyBlock(color: color, icon: Icons.lightbulb_outline, title: 'Resumo e explicação', text: 'Identifique a ideia central da matéria e explique com palavras simples. Observe o contexto dos textos e como cada ponto fortalece a ideia principal.'),
-      _StudyBlock(color: color, icon: Icons.compare_arrows, title: 'Uma comparação', text: 'Pense numa situação comum que tenha o mesmo princípio. Comparações curtas ajudam a visualizar o ensino e a lembrá-lo durante a semana.'),
-      _StudyBlock(color: color, icon: Icons.person_outline, title: 'Como aplicar no dia a dia', text: 'Escolha uma atitude específica que você pode praticar hoje. Pergunte-se: “O que devo começar, continuar ou evitar?”'),
+      _StudyBlock(color: color, icon: Icons.lightbulb_outline, title: 'Resumo e explicação', text: c[0]),
+      _StudyBlock(color: color, icon: Icons.question_answer_outlined, title: 'Resposta principal', text: c[1]),
+      _StudyBlock(color: color, icon: Icons.compare_arrows, title: 'Curiosidade e comparação', text: c[2]),
+      _StudyBlock(color: color, icon: Icons.person_outline, title: 'Como aplicar no dia a dia', text: c[3]),
       _StudyBlock(color: color, icon: Icons.family_restroom, title: 'Como aplicar na família', text: 'Procure uma maneira bondosa de usar o princípio para ouvir melhor, demonstrar respeito, perdoar ou fortalecer a espiritualidade da família.'),
       _StudyBlock(color: color, icon: Icons.groups_outlined, title: 'Como aplicar no campo', text: 'Transforme a ideia numa pergunta simples, escolha um texto principal e pense em como explicá-lo sem palavras difíceis.'),
       _StudyBlock(color: color, icon: Icons.psychology_outlined, title: 'Perguntas para recordar', text: 'O que isso me ensina sobre Jeová? Qual é o princípio? Em que situação vou precisar dele? Como explicaria este ponto em trinta segundos?'),
@@ -327,6 +330,40 @@ class StudyDetailPage extends StatelessWidget {
       const SizedBox(height: 16),
       FilledButton.icon(onPressed: () {}, icon: const Icon(Icons.mic_none), label: const Text('Perguntar ao assistente — em breve')),
     ]));
+  }
+}
+
+List<String> _weeklyStudy(String title) {
+  if (title == 'Tesouros da Palavra de Deus') return [
+    'Semana de 24 a 30 de agosto — Jeremias 29–30. Jeová não abandonou os judeus arrependidos. Ele prometeu ouvi-los, trazê-los de volta e corrigi-los de maneira equilibrada. A disciplina tinha o objetivo de recuperar, não de destruir.',
+    'Quando recebemos correção baseada na Bíblia, é melhor ouvir com humildade, orar e procurar o princípio envolvido. A correção pode ser uma prova do cuidado de Jeová e uma oportunidade de amadurecer.',
+    'A disciplina de Jeová pode ser comparada ao tratamento de um médico: nem sempre é agradável no momento, mas é aplicado na medida necessária para ajudar. O exílio não anulou o propósito de Jeová para seu povo.',
+    'Em vez de justificar imediatamente um erro, escute até o fim. Depois escolha uma mudança específica e acompanhe seu progresso durante a semana.'
+  ];
+  if (title == 'Joias Espirituais') return [
+    'A pergunta principal usa Jeremias 30:11 para mostrar que Jeová corrige “no devido grau”. A leitura também destaca oração sincera, busca de todo o coração, esperança e restauração.',
+    'Os pais imitam Jeová quando disciplinam com amor, equilíbrio e objetivo educativo. Eles levam em conta a idade e a situação do filho, explicam o motivo da correção e não agem apenas movidos pela raiva.',
+    'Ponto adicional: Jeremias 29:12, 13 mostra que buscar a Jeová envolve o coração inteiro. Isso inclui oração sincera acompanhada de esforço para agir de acordo com o que pedimos.',
+    'Antes de corrigir alguém, acalme-se e pense: “O que essa pessoa precisa aprender?” Ao receber correção, procure primeiro o que pode ser aproveitado.'
+  ];
+  if (title == 'Faça Seu Melhor no Ministério') return [
+    'A semana treina como iniciar conversas usando a brochura Seja Feliz para Sempre! em casa em casa e no testemunho público, além de oferecer um estudo bíblico.',
+    'O objetivo não é falar demais, mas despertar interesse. Faça uma pergunta simples, escute a resposta e mostre rapidamente como a brochura ajuda a encontrar respostas na Bíblia.',
+    'Uma boa introdução funciona como uma porta: ela não é o destino, apenas abre caminho para uma conversa. A sinceridade e o interesse pela pessoa são mais importantes que decorar frases.',
+    'Escolha uma pergunta curta e ensaie uma apresentação de menos de um minuto. Adapte a conversa ao que a pessoa disser.'
+  ];
+  if (title == 'Nossa Vida Cristã') return [
+    'O tema mostra que a esperança nas promessas de Jeová já nos fortalece antes do cumprimento. Ela pode trazer ânimo, força contra o desânimo e estabilidade num mundo incerto.',
+    'A lição principal é manter as promessas de Jeová vivas na mente. Esperança bíblica não é simples desejo; é confiança baseada no histórico de Jeová cumprir o que promete.',
+    'Hebreus compara a esperança a uma âncora. A âncora não remove a tempestade, mas impede que o barco seja levado sem controle.',
+    'Quando estiver preocupado, escolha uma promessa bíblica, leia o contexto e pense em uma razão concreta para confiar nela.'
+  ];
+  return [
+    'Estudo bíblico de congregação — capítulo 5. Leia cada pergunta, identifique a frase que responde diretamente e depois explique a ideia com suas próprias palavras.',
+    'Uma boa resposta é curta, responde exatamente ao que foi perguntado e se apoia no texto bíblico citado. Depois pode ser acrescentado um ponto complementar.',
+    'Observe personagens, lugares, sequência dos acontecimentos e o motivo das decisões. Esses detalhes ajudam a transformar informação em entendimento.',
+    'Prepare uma resposta principal e um comentário adicional. Marque no parágrafo apenas palavras-chave, evitando tentar decorar tudo.'
+  ];
 }
 
 class _StudyBlock extends StatelessWidget {

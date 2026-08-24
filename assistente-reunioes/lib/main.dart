@@ -325,12 +325,21 @@ class StudyDetailPage extends StatelessWidget {
       _StudyBlock(color: color, icon: Icons.family_restroom, title: 'Como aplicar na família', text: 'Procure uma maneira bondosa de usar o princípio para ouvir melhor, demonstrar respeito, perdoar ou fortalecer a espiritualidade da família.'),
       _StudyBlock(color: color, icon: Icons.groups_outlined, title: 'Como aplicar no campo', text: 'Transforme a ideia numa pergunta simples, escolha um texto principal e pense em como explicá-lo sem palavras difíceis.'),
       _StudyBlock(color: color, icon: Icons.psychology_outlined, title: 'Perguntas para recordar', text: 'O que isso me ensina sobre Jeová? Qual é o princípio? Em que situação vou precisar dele? Como explicaria este ponto em trinta segundos?'),
+      _StudyBlock(color: color, icon: Icons.bookmark_outline, title: 'Conclusão para memorizar', text: _memoryPoint(title)),
       const SizedBox(height: 8),
       const TextField(maxLines: 7, decoration: InputDecoration(labelText: 'Minhas joias e anotações', hintText: 'Escreva palavras-chave e aplicações pessoais...')),
       const SizedBox(height: 16),
       FilledButton.icon(onPressed: () {}, icon: const Icon(Icons.mic_none), label: const Text('Perguntar ao assistente — em breve')),
     ]));
   }
+}
+
+String _memoryPoint(String title) {
+  if (title == 'Tesouros da Palavra de Deus') return 'Jeová corrige na medida certa porque deseja recuperar, fortalecer e ajudar seus servos.';
+  if (title == 'Joias Espirituais') return 'A disciplina amorosa ensina; ela não serve para descarregar a raiva.';
+  if (title == 'Faça Seu Melhor no Ministério') return 'Perguntar, escutar e adaptar a conversa ajuda a alcançar o coração.';
+  if (title == 'Nossa Vida Cristã') return 'A esperança não remove todos os problemas, mas nos mantém firmes enquanto esperamos em Jeová.';
+  return 'Uma resposta simples, bíblica e feita com suas palavras é mais fácil de entender e recordar.';
 }
 
 List<String> _weeklyStudy(String title) {
@@ -369,7 +378,7 @@ List<String> _weeklyStudy(String title) {
 class _StudyBlock extends StatelessWidget {
   const _StudyBlock({required this.color, required this.icon, required this.title, required this.text});
   final Color color; final IconData icon; final String title, text;
-  @override Widget build(BuildContext context) => Padding(padding: const EdgeInsets.only(bottom: 12), child: Card(color: color.withValues(alpha: .10), child: Padding(padding: const EdgeInsets.all(15), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Row(children: [Icon(icon, color: color), const SizedBox(width: 9), Expanded(child: Text(title, style: TextStyle(fontWeight: FontWeight.bold, color: color, fontSize: 16)))]), const SizedBox(height: 8), Text(text)]))));
+  @override Widget build(BuildContext context) => Padding(padding: const EdgeInsets.only(bottom: 12), child: Card(color: color.withValues(alpha: .10), child: Padding(padding: const EdgeInsets.all(15), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Row(children: [Icon(icon, color: color), const SizedBox(width: 9), Expanded(child: Text(title, style: TextStyle(fontWeight: FontWeight.bold, color: color, fontSize: 16, decoration: TextDecoration.underline, decorationColor: color, decorationThickness: 1.5)))]), const SizedBox(height: 8), Text(text, style: const TextStyle(height: 1.45))]))));
 }
 
 class _AssistantPreview extends StatelessWidget {

@@ -134,7 +134,7 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     if (_loading) return const Scaffold(body: Center(child: CircularProgressIndicator()));
     final pages = [
-      _Dashboard(items: _items, onOpen: _openAssignment),
+      _Dashboard(items: _items, onOpen: _openAssignment, onLink: _openUrl),
       _WeekPage(items: _items, onOpen: _openAssignment),
       _LinksPage(onOpen: _openUrl),
       _SettingsPage(
@@ -202,9 +202,10 @@ class _HomePageState extends State<HomePage> {
 }
 
 class _Dashboard extends StatelessWidget {
-  const _Dashboard({required this.items, required this.onOpen});
+  const _Dashboard({required this.items, required this.onOpen, required this.onLink});
   final List<Assignment> items;
   final ValueChanged<Assignment> onOpen;
+  final ValueChanged<String> onLink;
 
   @override
   Widget build(BuildContext context) {
@@ -218,6 +219,12 @@ class _Dashboard extends StatelessWidget {
         const SizedBox(height: 4),
         Text(DateFormat("EEEE, d 'de' MMMM", 'pt_BR').format(DateTime.now())),
         const SizedBox(height: 18),
+        _DailyStudyCard(onOpen: () => onLink('https://wol.jw.org/pt/wol/h/r5/lp-t')),
+        const SizedBox(height: 22),
+        const _SectionTitle('Reunião desta semana'),
+        const SizedBox(height: 10),
+        _MeetingOverview(onOpen: () => onLink('https://www.jw.org/pt/biblioteca/jw-apostila-do-mes/')),
+        const SizedBox(height: 22),
         Card(
           color: Theme.of(context).colorScheme.primaryContainer,
           child: Padding(
@@ -252,6 +259,57 @@ class _Dashboard extends StatelessWidget {
       ],
     );
   }
+}
+
+class _DailyStudyCard extends StatelessWidget {
+  const _DailyStudyCard({required this.onOpen});
+  final VoidCallback onOpen;
+  @override
+  Widget build(BuildContext context) => Card(
+    color: Colors.white,
+    child: Padding(padding: const EdgeInsets.all(18), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Row(children: [
+        Container(padding: const EdgeInsets.all(9), decoration: BoxDecoration(color: const Color(0xffdce8f8), borderRadius: BorderRadius.circular(10)), child: const Icon(Icons.wb_sunny_outlined, color: Color(0xff315f9b))),
+        const SizedBox(width: 12),
+        const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('TEXTO DIÁRIO', style: TextStyle(color: Color(0xff315f9b), fontWeight: FontWeight.bold)), Text('Um pensamento para começar o dia')]))
+      ]),
+      const Divider(height: 28),
+      const Text('Em poucas palavras', style: TextStyle(fontWeight: FontWeight.bold)),
+      const SizedBox(height: 5),
+      const Text('Leia o texto oficial e identifique o que ele revela sobre Jeová, sobre nossas escolhas e sobre como tratar outras pessoas.'),
+      const SizedBox(height: 14),
+      const Text('Aplicação para hoje', style: TextStyle(fontWeight: FontWeight.bold)),
+      const SizedBox(height: 5),
+      const Text('Escolha uma atitude prática para colocar em ação ainda hoje. Uma aplicação pequena e específica é mais fácil de lembrar.'),
+      const SizedBox(height: 14),
+      Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: const Color(0xfffff5dc), borderRadius: BorderRadius.circular(10)), child: const Row(crossAxisAlignment: CrossAxisAlignment.start, children: [Icon(Icons.psychology_outlined), SizedBox(width: 10), Expanded(child: Text('Para meditar: Como esse conselho pode influenciar uma decisão minha hoje?'))])),
+      const SizedBox(height: 12),
+      OutlinedButton.icon(onPressed: onOpen, icon: const Icon(Icons.open_in_new), label: const Text('Ler o texto oficial de hoje')),
+    ])),
+  );
+}
+
+class _MeetingOverview extends StatelessWidget {
+  const _MeetingOverview({required this.onOpen});
+  final VoidCallback onOpen;
+  @override
+  Widget build(BuildContext context) => Card(child: Padding(padding: const EdgeInsets.all(14), child: Column(children: [
+    const _MeetingPart(icon: Icons.diamond_outlined, color: Color(0xff4f5b66), title: 'Tesouros da Palavra de Deus', subtitle: 'Ideia principal • textos • aplicação'),
+    const Divider(),
+    const _MeetingPart(icon: Icons.forum_outlined, color: Color(0xffb08332), title: 'Faça Seu Melhor no Ministério', subtitle: 'Objetivo da lição • sugestão de conversa'),
+    const Divider(),
+    const _MeetingPart(icon: Icons.favorite_outline, color: Color(0xff8b5261), title: 'Nossa Vida Cristã', subtitle: 'Resumo • como usar na família e congregação'),
+    const Divider(),
+    const _MeetingPart(icon: Icons.menu_book_outlined, color: Color(0xff315f9b), title: 'Estudo Bíblico de Congregação', subtitle: 'Pontos principais • perguntas para recordar'),
+    const SizedBox(height: 8),
+    FilledButton.icon(onPressed: onOpen, icon: const Icon(Icons.calendar_month), label: const Text('Abrir programação oficial')),
+  ])));
+}
+
+class _MeetingPart extends StatelessWidget {
+  const _MeetingPart({required this.icon, required this.color, required this.title, required this.subtitle});
+  final IconData icon; final Color color; final String title, subtitle;
+  @override Widget build(BuildContext context) => ListTile(contentPadding: EdgeInsets.zero, leading: CircleAvatar(backgroundColor: color.withValues(alpha: .14), child: Icon(icon, color: color)), title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)), subtitle: Text(subtitle), trailing: const Icon(Icons.chevron_right));
 }
 
 class _WeekPage extends StatelessWidget {

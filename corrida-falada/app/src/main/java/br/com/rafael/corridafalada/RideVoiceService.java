@@ -7,6 +7,8 @@ import android.graphics.ColorSpace;
 import android.graphics.Path;
 import android.hardware.HardwareBuffer;
 import android.os.Build;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.SystemClock;
 import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
@@ -30,6 +32,7 @@ public final class RideVoiceService extends AccessibilityService implements Text
     private AppPrefs prefs;
     private TextToSpeech tts;
     private long lastScan;
+    private long lastOcrAt;
     private boolean screenshotBusy;
     private String lastFingerprint = "";
     private WindowManager windowManager;
@@ -37,12 +40,14 @@ public final class RideVoiceService extends AccessibilityService implements Text
     private TextView clickTarget;
     private WindowManager.LayoutParams clickTargetParams;
     private int clickTargetSize;
+    private final Handler scanHandler = new Handler(Looper.getMainLooper());
 
     @Override public void onServiceConnected() {
         prefs = new AppPrefs(this); tts = new TextToSpeech(this, this);
         createBanner();
         createClickTarget();
         prefs.status("Acessibilidade conectada");
+        scanHandler.post(scanLoop);
     }
 
     @Override public void onInit(int status) {
@@ -76,6 +81,29 @@ public final class RideVoiceService extends AccessibilityService implements Text
         return pkg.startsWith("com.android.") || pkg.startsWith("android") ||
                 pkg.startsWith("com.google.android") || pkg.startsWith("com.samsung.android");
     }
+
+    private final Runnable scanLoop = new Runnable() {
+        @Override public void run() {
+            try {
+                if (prefs != null) syncClickTarget();
+                if (prefs != null && prefs.enabled()) {
+                    String text = collectAllText();
+                    RecognizedOffer offer = OfferParser.parse(text);
+                    if (offer.canClassify()) {
+                        speakOnce(offer, "Leitura contínua");
+                    } else {
+                        if (!looksLikeRide(text)) lastFingerprint = "";
+                        long now = SystemClock.elapsedRealtime();
+                        if (looksLikeRide(text) && prefs.ocr() && Build.VERSION.SDK_INT >= 30 && now - lastOcrAt >= 1400) {
+                            lastOcrAt = now; takeOcrScreenshot();
+                        }
+                    }
+                }
+            } finally {
+                scanHandler.postDelayed(this, 650);
+            }
+        }
+    };
 
     private String collectAllText() {
         StringBuilder out = new StringBuilder();
@@ -240,6 +268,7 @@ public final class RideVoiceService extends AccessibilityService implements Text
 
     @Override public void onInterrupt() { if(prefs!=null)prefs.status("Serviço interrompido"); }
     @Override public void onDestroy() {
+        scanHandler.removeCallbacksAndMessages(null);
         if(tts!=null){tts.stop();tts.shutdown();}
         if(windowManager!=null && banner!=null) { try { windowManager.removeView(banner); } catch(Exception ignored){} }
         if(windowManager!=null && clickTarget!=null) { try { windowManager.removeView(clickTarget); } catch(Exception ignored){} }

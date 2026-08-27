@@ -20,17 +20,21 @@ public final class RecognizedOffer {
         return value > 0 && pricePerKm > 0 && pickupKm >= 0 && !pickupAddress.isBlank() && !destinationAddress.isBlank();
     }
 
+    public boolean canClassify() { return pricePerKm > 0; }
+
     public String fingerprint() {
-        return String.format(Locale.US, "%.2f|%.2f|%s|%s", value, pickupKm, pickupAddress, destinationAddress);
+        return String.format(Locale.US, "%.2f|%.2f|%.2f|%s|%s", value, pricePerKm, pickupKm, pickupAddress, destinationAddress);
     }
 
     public String speech() {
         String rating = title(calculatedClassification()) + ".";
-        String pickup = OfferParser.placeForSpeech(pickupAddress);
-        String destination = OfferParser.placeForSpeech(destinationAddress);
-        return String.format(Locale.forLanguageTag("pt-BR"),
-                "%s Embarque em %s, a %.1f quilômetro%s. Destino %s. Valor %.0f reais. %.2f por quilômetro.",
-                rating, pickup, pickupKm, pickupKm == 1.0 ? "" : "s", destination, value, pricePerKm);
+        StringBuilder out = new StringBuilder(rating);
+        if (!pickupAddress.isBlank()) out.append(" Embarque em ").append(OfferParser.placeForSpeech(pickupAddress)).append(".");
+        if (pickupKm >= 0) out.append(String.format(Locale.forLanguageTag("pt-BR"), " Coleta a %.1f quilômetro%s.", pickupKm, pickupKm == 1.0 ? "" : "s"));
+        if (!destinationAddress.isBlank()) out.append(" Destino ").append(OfferParser.placeForSpeech(destinationAddress)).append(".");
+        if (value > 0) out.append(String.format(Locale.forLanguageTag("pt-BR"), " Valor %.0f reais.", value));
+        out.append(String.format(Locale.forLanguageTag("pt-BR"), " %.2f por quilômetro.", pricePerKm));
+        return out.toString();
     }
 
     private static String title(String text) {

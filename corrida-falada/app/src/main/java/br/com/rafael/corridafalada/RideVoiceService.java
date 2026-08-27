@@ -62,7 +62,7 @@ public final class RideVoiceService extends AccessibilityService implements Text
 
         String accessible = collectAllText();
         RecognizedOffer offer = OfferParser.parse(accessible);
-        if (offer.isComplete()) { speakOnce(offer, "Acessibilidade"); return; }
+        if (offer.canClassify()) { speakOnce(offer, "Acessibilidade"); return; }
         if (looksLikeRide(accessible) && prefs.ocr() && Build.VERSION.SDK_INT >= 30) takeOcrScreenshot();
     }
 
@@ -102,7 +102,7 @@ public final class RideVoiceService extends AccessibilityService implements Text
                 Bitmap bitmap = hardware == null ? null : hardware.copy(Bitmap.Config.ARGB_8888, false);
                 buffer.close(); if (bitmap == null) { screenshotBusy=false; prefs.status("OCR: captura indisponível"); return; }
                 TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS).process(InputImage.fromBitmap(bitmap,0))
-                    .addOnSuccessListener(text -> { screenshotBusy=false; bitmap.recycle(); RecognizedOffer o=OfferParser.parse(text.getText()); if(o.isComplete())speakOnce(o,"OCR");else prefs.status("OCR leu a tela, mas faltaram dados"); })
+                    .addOnSuccessListener(text -> { screenshotBusy=false; bitmap.recycle(); RecognizedOffer o=OfferParser.parse(text.getText()); if(o.canClassify())speakOnce(o,"OCR");else prefs.status("OCR leu a tela, mas não encontrou R$/km"); })
                     .addOnFailureListener(e -> { screenshotBusy=false; bitmap.recycle(); prefs.status("Falha no OCR: "+e.getClass().getSimpleName()); });
             }
             @Override public void onFailure(int errorCode) { screenshotBusy=false; prefs.status("Captura não autorizada: "+errorCode); }
@@ -195,7 +195,7 @@ public final class RideVoiceService extends AccessibilityService implements Text
         String rating = offer.calculatedClassification();
         int color = rating.equals("EXCELENTE") ? Color.rgb(0,135,55) :
                 rating.equals("BOA") ? Color.rgb(238,177,0) : Color.rgb(198,35,35);
-        String pickup = OfferParser.placeForSpeech(offer.pickupAddress);
+        String pickup = offer.pickupAddress.isBlank() ? "bairro não identificado" : OfferParser.placeForSpeech(offer.pickupAddress);
         banner.setBackgroundColor(color);
         banner.setText(String.format(Locale.forLanguageTag("pt-BR"),
                 "%s — R$ %.2f/km | Coleta: %.1f km | %s", rating, offer.pricePerKm, offer.pickupKm, pickup));

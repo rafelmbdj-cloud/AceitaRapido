@@ -137,10 +137,7 @@ public final class RideVoiceService extends AccessibilityService implements Text
         clickTarget = new TextView(this);
         clickTarget.setText("+"); clickTarget.setTextSize(42); clickTarget.setTextColor(Color.rgb(50,220,90));
         clickTarget.setGravity(Gravity.CENTER);
-        GradientDrawable shape = new GradientDrawable();
-        shape.setShape(GradientDrawable.OVAL); shape.setColor(0xAA111111);
-        shape.setStroke(Math.max(3, clickTargetSize / 18), Color.rgb(50,220,90));
-        clickTarget.setBackground(shape);
+        setTargetAppearance(Color.rgb(50,220,90), "+");
         clickTargetParams = new WindowManager.LayoutParams(
                 clickTargetSize, clickTargetSize, WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
                 WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
@@ -176,9 +173,36 @@ public final class RideVoiceService extends AccessibilityService implements Text
         final float x = clickTargetParams.x + clickTargetSize / 2f;
         final float y = clickTargetParams.y + clickTargetSize / 2f;
         clickTarget.setVisibility(TextView.GONE);
-        dispatchTap(x, y, () -> banner.postDelayed(() -> dispatchTap(x, y, () -> {
-            syncClickTarget(); prefs.status("Excelente: dois toques concluídos");
-        }), 110));
+        prefs.status("Excelente: preparando dois toques");
+        banner.postDelayed(() -> dispatchTap(x, y, () ->
+                banner.postDelayed(() -> dispatchTap(x, y, this::showClickSuccess), 120)), 180);
+    }
+
+    private void showClickSuccess() {
+        setTargetAppearance(Color.rgb(25,130,255), "✓");
+        syncClickTarget();
+        prefs.status("Excelente: dois toques confirmados pelo Android");
+        clickTarget.removeCallbacks(resetTargetAppearance);
+        clickTarget.postDelayed(resetTargetAppearance, 1800);
+    }
+
+    private final Runnable resetTargetAppearance = () -> setTargetAppearance(Color.rgb(50,220,90), "+");
+
+    private void showClickFailure() {
+        setTargetAppearance(Color.rgb(230,45,45), "×");
+        syncClickTarget();
+        prefs.status("Os toques foram cancelados pelo Android");
+        clickTarget.removeCallbacks(resetTargetAppearance);
+        clickTarget.postDelayed(resetTargetAppearance, 1800);
+    }
+
+    private void setTargetAppearance(int color, String symbol) {
+        if (clickTarget == null) return;
+        clickTarget.setText(symbol); clickTarget.setTextColor(color);
+        GradientDrawable shape = new GradientDrawable();
+        shape.setShape(GradientDrawable.OVAL); shape.setColor(0xAA111111);
+        shape.setStroke(Math.max(3, clickTargetSize / 18), color);
+        clickTarget.setBackground(shape);
     }
 
     private void dispatchTap(float x, float y, Runnable after) {
@@ -187,7 +211,7 @@ public final class RideVoiceService extends AccessibilityService implements Text
         GestureDescription gesture = new GestureDescription.Builder().addStroke(stroke).build();
         dispatchGesture(gesture, new GestureResultCallback() {
             @Override public void onCompleted(GestureDescription gestureDescription) { after.run(); }
-            @Override public void onCancelled(GestureDescription gestureDescription) { syncClickTarget(); }
+            @Override public void onCancelled(GestureDescription gestureDescription) { showClickFailure(); }
         }, null);
     }
 

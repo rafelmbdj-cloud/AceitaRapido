@@ -1,17 +1,21 @@
 package br.com.rafael.corridafalada;
 
 import android.accessibilityservice.AccessibilityService;
+import android.accessibilityservice.GestureDescription;
 import android.graphics.Bitmap;
 import android.graphics.ColorSpace;
+import android.graphics.Path;
 import android.hardware.HardwareBuffer;
 import android.os.Build;
 import android.os.SystemClock;
 import android.graphics.Color;
+import android.graphics.drawable.GradientDrawable;
 import android.media.AudioManager;
 import android.media.ToneGenerator;
 import android.speech.tts.TextToSpeech;
 import android.view.Gravity;
 import android.view.Display;
+import android.view.MotionEvent;
 import android.view.WindowManager;
 import android.widget.TextView;
 import android.view.accessibility.*;
@@ -30,10 +34,14 @@ public final class RideVoiceService extends AccessibilityService implements Text
     private String lastFingerprint = "";
     private WindowManager windowManager;
     private TextView banner;
+    private TextView clickTarget;
+    private WindowManager.LayoutParams clickTargetParams;
+    private int clickTargetSize;
 
     @Override public void onServiceConnected() {
         prefs = new AppPrefs(this); tts = new TextToSpeech(this, this);
         createBanner();
+        createClickTarget();
         prefs.status("Acessibilidade conectada");
     }
 
@@ -46,6 +54,7 @@ public final class RideVoiceService extends AccessibilityService implements Text
     @Override public void onAccessibilityEvent(AccessibilityEvent event) {
         if (event == null || event.getPackageName() == null) return;
         if (prefs == null) prefs = new AppPrefs(this);
+        syncClickTarget();
         String pkg = event.getPackageName().toString();
         if (!pkg.equals(getPackageName())) prefs.lastPackage(pkg);
         if (!prefs.enabled() || pkg.equals(getPackageName()) || isSystemPackage(pkg)) return;
@@ -105,6 +114,7 @@ public final class RideVoiceService extends AccessibilityService implements Text
         lastFingerprint = fingerprint; prefs.status(source+": "+offer.speech());
         showBanner(offer);
         playRatingSound(offer.calculatedClassification());
+        if (offer.calculatedClassification().equals("EXCELENTE") && prefs.clickTarget()) doubleTapTarget();
         if (tts != null) tts.speak(offer.speech(), TextToSpeech.QUEUE_FLUSH, null, fingerprint);
     }
 
@@ -120,6 +130,65 @@ public final class RideVoiceService extends AccessibilityService implements Text
                 android.graphics.PixelFormat.TRANSLUCENT);
         p.gravity = Gravity.TOP;
         windowManager.addView(banner, p);
+    }
+
+    private void createClickTarget() {
+        clickTargetSize = Math.round(68 * getResources().getDisplayMetrics().density);
+        clickTarget = new TextView(this);
+        clickTarget.setText("+"); clickTarget.setTextSize(42); clickTarget.setTextColor(Color.rgb(50,220,90));
+        clickTarget.setGravity(Gravity.CENTER);
+        GradientDrawable shape = new GradientDrawable();
+        shape.setShape(GradientDrawable.OVAL); shape.setColor(0xAA111111);
+        shape.setStroke(Math.max(3, clickTargetSize / 18), Color.rgb(50,220,90));
+        clickTarget.setBackground(shape);
+        clickTargetParams = new WindowManager.LayoutParams(
+                clickTargetSize, clickTargetSize, WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
+                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
+                android.graphics.PixelFormat.TRANSLUCENT);
+        clickTargetParams.gravity = Gravity.TOP | Gravity.START;
+        clickTargetParams.x = prefs.clickX(); clickTargetParams.y = prefs.clickY();
+        final float[] startTouch = new float[2]; final int[] startPos = new int[2];
+        clickTarget.setOnTouchListener((view, event) -> {
+            if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                startTouch[0] = event.getRawX(); startTouch[1] = event.getRawY();
+                startPos[0] = clickTargetParams.x; startPos[1] = clickTargetParams.y; return true;
+            }
+            if (event.getAction() == MotionEvent.ACTION_MOVE) {
+                clickTargetParams.x = startPos[0] + Math.round(event.getRawX() - startTouch[0]);
+                clickTargetParams.y = startPos[1] + Math.round(event.getRawY() - startTouch[1]);
+                windowManager.updateViewLayout(clickTarget, clickTargetParams); return true;
+            }
+            if (event.getAction() == MotionEvent.ACTION_UP) {
+                prefs.clickPosition(clickTargetParams.x, clickTargetParams.y); return true;
+            }
+            return false;
+        });
+        windowManager.addView(clickTarget, clickTargetParams);
+        syncClickTarget();
+    }
+
+    private void syncClickTarget() {
+        if (clickTarget != null) clickTarget.setVisibility(prefs.clickTarget() ? TextView.VISIBLE : TextView.GONE);
+    }
+
+    private void doubleTapTarget() {
+        if (Build.VERSION.SDK_INT < 24 || clickTarget == null) return;
+        final float x = clickTargetParams.x + clickTargetSize / 2f;
+        final float y = clickTargetParams.y + clickTargetSize / 2f;
+        clickTarget.setVisibility(TextView.GONE);
+        dispatchTap(x, y, () -> banner.postDelayed(() -> dispatchTap(x, y, () -> {
+            syncClickTarget(); prefs.status("Excelente: dois toques concluídos");
+        }), 110));
+    }
+
+    private void dispatchTap(float x, float y, Runnable after) {
+        Path path = new Path(); path.moveTo(x, y);
+        GestureDescription.StrokeDescription stroke = new GestureDescription.StrokeDescription(path, 0, 60);
+        GestureDescription gesture = new GestureDescription.Builder().addStroke(stroke).build();
+        dispatchGesture(gesture, new GestureResultCallback() {
+            @Override public void onCompleted(GestureDescription gestureDescription) { after.run(); }
+            @Override public void onCancelled(GestureDescription gestureDescription) { syncClickTarget(); }
+        }, null);
     }
 
     private void showBanner(RecognizedOffer offer) {
@@ -149,6 +218,7 @@ public final class RideVoiceService extends AccessibilityService implements Text
     @Override public void onDestroy() {
         if(tts!=null){tts.stop();tts.shutdown();}
         if(windowManager!=null && banner!=null) { try { windowManager.removeView(banner); } catch(Exception ignored){} }
+        if(windowManager!=null && clickTarget!=null) { try { windowManager.removeView(clickTarget); } catch(Exception ignored){} }
         super.onDestroy();
     }
 }

@@ -21,7 +21,7 @@ public final class MainActivity extends Activity {
     private static final int PICK_PRINT = 1001;
     private AppPrefs prefs;
     private TextView statusText;
-    private Switch enabled, ocr;
+    private Switch enabled, ocr, clickTarget;
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
@@ -46,6 +46,18 @@ public final class MainActivity extends Activity {
         enabled.setChecked(prefs.enabled()); enabled.setOnCheckedChangeListener((v,on) -> {
             prefs.enabled(on); prefs.status(on ? "Ativado; aguardando oferta" : "Desativado"); refresh();
         }); root.addView(enabled);
+
+        clickTarget = new Switch(this);
+        clickTarget.setText("Mostrar mira: dois cliques quando for excelente");
+        clickTarget.setTextSize(17);
+        clickTarget.setChecked(prefs.clickTarget());
+        clickTarget.setOnCheckedChangeListener((v,on) -> {
+            prefs.clickTarget(on);
+            prefs.status(on ? "Mira ativada; arraste até o ponto desejado" : "Mira desativada");
+            refresh();
+        });
+        root.addView(clickTarget);
+        root.addView(text("A mira pode ser arrastada pela tela. Ela toca duas vezes somente quando a faixa for EXCELENTE/verde.", 14, false));
 
         TextView rules = text("Excelente (verde): acima de R$ 3,00/km\nBoa (amarela): de R$ 2,00 a R$ 3,00/km\nRuim (vermelha): abaixo de R$ 2,00/km", 16, true);
         rules.setTextColor(Color.rgb(35, 35, 35)); root.addView(rules);

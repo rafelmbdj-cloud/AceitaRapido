@@ -1,8 +1,13 @@
 # Corrida Falada
 
 Aplicativo Android que lê uma oferta por acessibilidade e, quando necessário,
-usa captura autorizada e OCR em memória. Fala classificação, coleta, embarque,
-destino e valor. **Não executa cliques e não aceita nem recusa corridas.**
+usa captura autorizada e OCR em memória. Calcula o valor por quilômetro, mostra
+uma faixa colorida, toca alertas diferentes e fala o bairro ou a rua.
+**Não executa cliques e não aceita nem recusa corridas.**
+
+- Excelente (verde): acima de R$ 3,00/km
+- Boa (amarela): de R$ 2,00 a R$ 3,00/km
+- Ruim (vermelha): abaixo de R$ 2,00/km
 
 O parser possui teste automatizado com o texto extraído do print de referência,
 incluindo R$ 23,08, coleta a 1,6 km, Rua Dois e Rua Nossa Senhora de Fátima.

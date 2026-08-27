@@ -7,6 +7,7 @@ import java.util.regex.*;
 public final class OfferParser {
     private static final Pattern CLASSIFICATION = Pattern.compile("(?i)\\b(EXCELENTE|BOA|NORMAL|RUIM)\\b");
     private static final Pattern MONEY = Pattern.compile("(?i)R\\$\\s*(\\d{1,4}(?:[.,]\\d{1,2})?)");
+    private static final Pattern PER_KM = Pattern.compile("(?i)R\\$\\s*(\\d{1,3}(?:[.,]\\d{1,2})?)\\s*/\\s*km");
     private static final Pattern LEG = Pattern.compile("(?i)(\\d+(?:[.,]\\d+)?)\\s*km\\s*\\(\\s*\\d+\\s*min[^)]*\\)");
     private static final Pattern ADDRESS = Pattern.compile("(?i)^(?:RUA|R\\.|AVENIDA|AV\\.|RODOVIA|ESTRADA|TRAVESSA|ALAMEDA|PR-)[\\p{L}0-9 .ºª,'-]+$");
 
@@ -15,6 +16,9 @@ public final class OfferParser {
         String text = raw == null ? "" : raw.replace('\u00a0', ' ');
         Matcher classification = CLASSIFICATION.matcher(text);
         if (classification.find()) offer.classification = classification.group(1).toUpperCase(Locale.ROOT);
+
+        Matcher perKm = PER_KM.matcher(text);
+        if (perKm.find()) offer.pricePerKm = number(perKm.group(1));
 
         Matcher money = MONEY.matcher(text);
         while (money.find()) {
@@ -35,6 +39,13 @@ public final class OfferParser {
             } else if (offer.destinationAddress.isBlank()) {
                 offer.destinationAddress = address;
                 break;
+            }
+        }
+        if (offer.pricePerKm < 0 && offer.value > 0) {
+            Matcher tripKm = Pattern.compile("(?i)(\\d+(?:[.,]\\d+)?)\\s*km\\s*\\(\\s*R\\$").matcher(text);
+            if (tripKm.find()) {
+                double km = number(tripKm.group(1));
+                if (km > 0) offer.pricePerKm = offer.value / km;
             }
         }
         return offer;

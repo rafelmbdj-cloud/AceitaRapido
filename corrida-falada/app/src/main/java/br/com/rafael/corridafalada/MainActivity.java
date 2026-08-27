@@ -25,7 +25,7 @@ public final class MainActivity extends Activity {
 
         TextView title = text("Corrida Falada", 29, true);
         title.setTextColor(Color.rgb(7, 105, 45)); root.addView(title);
-        root.addView(text("Lê a oferta e fala os dados. Nunca aceita nem recusa.", 16, false));
+        root.addView(text("Analisa a corrida, mostra a faixa colorida, toca um alerta e fala o bairro. Nunca aceita nem recusa.", 16, false));
 
         Button accessibility = button("1. Abrir Acessibilidade");
         accessibility.setOnClickListener(v -> startActivity(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)));
@@ -42,13 +42,16 @@ public final class MainActivity extends Activity {
         packageText = text("Aplicativo selecionado: " + shownTarget(), 14, false); root.addView(packageText);
         ocr = new Switch(this); ocr.setText("Usar OCR quando os textos não estiverem acessíveis");
         ocr.setChecked(prefs.ocr()); ocr.setOnCheckedChangeListener((v,on) -> prefs.ocr(on)); root.addView(ocr);
-        enabled = new Switch(this); enabled.setText("Ativar leitura falada"); enabled.setTextSize(18);
+        enabled = new Switch(this); enabled.setText("Ativar análise de corridas"); enabled.setTextSize(18);
         enabled.setChecked(prefs.enabled()); enabled.setOnCheckedChangeListener((v,on) -> {
             if (on && prefs.target().isBlank()) { v.setChecked(false); toast("Escolha primeiro o aplicativo de corridas."); return; }
             prefs.enabled(on); prefs.status(on ? "Ativado; aguardando oferta" : "Desativado"); refresh();
         }); root.addView(enabled);
 
-        Button test = button("Testar voz com a oferta do print");
+        TextView rules = text("Excelente (verde): acima de R$ 3,00/km\nBoa (amarela): de R$ 2,00 a R$ 3,00/km\nRuim (vermelha): abaixo de R$ 2,00/km", 16, true);
+        rules.setTextColor(Color.rgb(35, 35, 35)); root.addView(rules);
+
+        Button test = button("Testar faixa, som e voz");
         test.setOnClickListener(v -> testVoice()); root.addView(test);
 
         statusText = text("", 15, false); statusText.setPadding(dp(14),dp(14),dp(14),dp(14));
@@ -59,7 +62,7 @@ public final class MainActivity extends Activity {
     }
 
     private void testVoice() {
-        RecognizedOffer sample = OfferParser.parse("EXCELENTE\nR$ 23,08\n1,6 km (4 min)\nRua Dois - Irati, PR\n4,1 km (8 min)\nRua Nossa Senhora de Fátima - Irati, PR");
+        RecognizedOffer sample = OfferParser.parse("R$ 23,08\nR$ 3,20/km\n1,6 km (4 min)\nRua Dois - Centro - Irati, PR\n4,1 km (8 min)\nRua Nossa Senhora de Fátima - Rio Bonito - Irati, PR");
         final TextToSpeech[] voice = new TextToSpeech[1];
         voice[0] = new TextToSpeech(this, status -> {
             if (status != TextToSpeech.SUCCESS) { toast("A voz do Android não está disponível."); return; }

@@ -14,9 +14,18 @@ public class OfferParserTest {
         assertTrue(offer.isComplete());
         assertEquals("EXCELENTE", offer.classification);
         assertEquals(23.08, offer.value, 0.001);
+        assertEquals(3.48, offer.pricePerKm, 0.001);
         assertEquals(1.6, offer.pickupKm, 0.001);
         assertEquals("Rua Dois - Irati, PR", offer.pickupAddress);
         assertEquals("Rua Nossa Senhora de Fátima - Irati, PR", offer.destinationAddress);
         assertTrue(offer.speech().startsWith("Excelente."));
+    }
+
+    @Test public void appliesRequestedPriceRanges() {
+        RecognizedOffer offer = new RecognizedOffer();
+        offer.pricePerKm = 3.01; assertEquals("EXCELENTE", offer.calculatedClassification());
+        offer.pricePerKm = 3.00; assertEquals("BOA", offer.calculatedClassification());
+        offer.pricePerKm = 2.00; assertEquals("BOA", offer.calculatedClassification());
+        offer.pricePerKm = 1.99; assertEquals("RUIM", offer.calculatedClassification());
     }
 }

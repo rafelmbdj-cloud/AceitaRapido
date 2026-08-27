@@ -6,8 +6,14 @@ import android.graphics.ColorSpace;
 import android.hardware.HardwareBuffer;
 import android.os.Build;
 import android.os.SystemClock;
+import android.graphics.Color;
+import android.media.AudioManager;
+import android.media.ToneGenerator;
 import android.speech.tts.TextToSpeech;
+import android.view.Gravity;
 import android.view.Display;
+import android.view.WindowManager;
+import android.widget.TextView;
 import android.view.accessibility.*;
 import com.google.android.gms.tasks.Tasks;
 import com.google.mlkit.vision.common.InputImage;
@@ -22,9 +28,12 @@ public final class RideVoiceService extends AccessibilityService implements Text
     private long lastScan;
     private boolean screenshotBusy;
     private String lastFingerprint = "";
+    private WindowManager windowManager;
+    private TextView banner;
 
     @Override public void onServiceConnected() {
         prefs = new AppPrefs(this); tts = new TextToSpeech(this, this);
+        createBanner();
         prefs.status("Acessibilidade conectada");
     }
 
@@ -84,9 +93,52 @@ public final class RideVoiceService extends AccessibilityService implements Text
     private void speakOnce(RecognizedOffer offer, String source) {
         String fingerprint = offer.fingerprint(); if (fingerprint.equals(lastFingerprint)) return;
         lastFingerprint = fingerprint; prefs.status(source+": "+offer.speech());
+        showBanner(offer);
+        playRatingSound(offer.calculatedClassification());
         if (tts != null) tts.speak(offer.speech(), TextToSpeech.QUEUE_FLUSH, null, fingerprint);
     }
 
+    private void createBanner() {
+        windowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
+        banner = new TextView(this);
+        banner.setTextColor(Color.WHITE); banner.setTextSize(24); banner.setGravity(Gravity.CENTER);
+        banner.setPadding(18, 14, 18, 14); banner.setVisibility(TextView.GONE);
+        WindowManager.LayoutParams p = new WindowManager.LayoutParams(
+                WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.WRAP_CONTENT,
+                WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
+                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
+                android.graphics.PixelFormat.TRANSLUCENT);
+        p.gravity = Gravity.TOP;
+        windowManager.addView(banner, p);
+    }
+
+    private void showBanner(RecognizedOffer offer) {
+        String rating = offer.calculatedClassification();
+        int color = rating.equals("EXCELENTE") ? Color.rgb(0,135,55) :
+                rating.equals("BOA") ? Color.rgb(238,177,0) : Color.rgb(198,35,35);
+        String pickup = OfferParser.placeForSpeech(offer.pickupAddress);
+        banner.setBackgroundColor(color);
+        banner.setText(String.format(Locale.forLanguageTag("pt-BR"),
+                "%s — R$ %.2f/km | Coleta: %.1f km | %s", rating, offer.pricePerKm, offer.pickupKm, pickup));
+        banner.setVisibility(TextView.VISIBLE);
+        banner.removeCallbacks(hideBanner);
+        banner.postDelayed(hideBanner, 12000);
+    }
+
+    private final Runnable hideBanner = () -> { if (banner != null) banner.setVisibility(TextView.GONE); };
+
+    private void playRatingSound(String rating) {
+        ToneGenerator tone = new ToneGenerator(AudioManager.STREAM_NOTIFICATION, 90);
+        int type = rating.equals("RUIM") ? ToneGenerator.TONE_PROP_NACK :
+                rating.equals("EXCELENTE") ? ToneGenerator.TONE_PROP_ACK : ToneGenerator.TONE_PROP_BEEP;
+        tone.startTone(type, rating.equals("RUIM") ? 550 : 260);
+        banner.postDelayed(tone::release, 800);
+    }
+
     @Override public void onInterrupt() { if(prefs!=null)prefs.status("Serviço interrompido"); }
-    @Override public void onDestroy() { if(tts!=null){tts.stop();tts.shutdown();} super.onDestroy(); }
+    @Override public void onDestroy() {
+        if(tts!=null){tts.stop();tts.shutdown();}
+        if(windowManager!=null && banner!=null) { try { windowManager.removeView(banner); } catch(Exception ignored){} }
+        super.onDestroy();
+    }
 }

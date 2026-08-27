@@ -3,14 +3,22 @@ package br.com.rafael.corridafalada;
 import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Color;
+import android.media.AudioManager;
+import android.media.ToneGenerator;
+import android.net.Uri;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.speech.tts.TextToSpeech;
 import android.view.ViewGroup;
 import android.widget.*;
+import com.google.mlkit.vision.common.InputImage;
+import com.google.mlkit.vision.text.TextRecognition;
+import com.google.mlkit.vision.text.latin.TextRecognizerOptions;
+import java.io.IOException;
 import java.util.Locale;
 
 public final class MainActivity extends Activity {
+    private static final int PICK_PRINT = 1001;
     private AppPrefs prefs;
     private TextView statusText;
     private Switch enabled, ocr;
@@ -42,8 +50,8 @@ public final class MainActivity extends Activity {
         TextView rules = text("Excelente (verde): acima de R$ 3,00/km\nBoa (amarela): de R$ 2,00 a R$ 3,00/km\nRuim (vermelha): abaixo de R$ 2,00/km", 16, true);
         rules.setTextColor(Color.rgb(35, 35, 35)); root.addView(rules);
 
-        Button test = button("Testar faixa, som e voz");
-        test.setOnClickListener(v -> testVoice()); root.addView(test);
+        Button test = button("ANALISAR PRINT DA CORRIDA");
+        test.setOnClickListener(v -> choosePrint()); root.addView(test);
 
         statusText = text("", 15, false); statusText.setPadding(dp(14),dp(14),dp(14),dp(14));
         statusText.setBackgroundColor(Color.rgb(224, 242, 229)); root.addView(statusText);
@@ -52,14 +60,59 @@ public final class MainActivity extends Activity {
         ScrollView scroll = new ScrollView(this); scroll.addView(root); setContentView(scroll); refresh();
     }
 
-    private void testVoice() {
-        RecognizedOffer sample = OfferParser.parse("R$ 23,08\nR$ 3,20/km\n1,6 km (4 min)\nRua Dois - Centro - Irati, PR\n4,1 km (8 min)\nRua Nossa Senhora de Fátima - Rio Bonito - Irati, PR");
+    private void choosePrint() {
+        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        intent.setType("image/*");
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        startActivityForResult(intent, PICK_PRINT);
+    }
+
+    @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode != PICK_PRINT || resultCode != RESULT_OK || data == null || data.getData() == null) return;
+        analyzePrint(data.getData());
+    }
+
+    private void analyzePrint(Uri uri) {
+        prefs.status("Lendo o print..."); refresh();
+        try {
+            InputImage image = InputImage.fromFilePath(this, uri);
+            TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS).process(image)
+                    .addOnSuccessListener(text -> showPrintResult(OfferParser.parse(text.getText())))
+                    .addOnFailureListener(error -> { prefs.status("Não consegui ler esse print"); refresh(); });
+        } catch (IOException error) {
+            prefs.status("Não consegui abrir esse print"); refresh();
+        }
+    }
+
+    private void showPrintResult(RecognizedOffer offer) {
+        if (offer.pricePerKm <= 0) {
+            prefs.status("Não encontrei o valor por quilômetro no print"); refresh(); return;
+        }
+        String rating = offer.calculatedClassification();
+        int color = rating.equals("EXCELENTE") ? Color.rgb(0,135,55) :
+                rating.equals("BOA") ? Color.rgb(238,177,0) : Color.rgb(198,35,35);
+        String place = !offer.pickupAddress.isBlank() ? OfferParser.placeForSpeech(offer.pickupAddress) : "bairro não identificado";
+        prefs.status(String.format(Locale.forLanguageTag("pt-BR"), "%s — R$ %.2f/km — %s", rating, offer.pricePerKm, place));
+        refresh(); statusText.setBackgroundColor(color); statusText.setTextColor(Color.WHITE);
+        playSound(rating); speak(rating + ". " + place + ".");
+    }
+
+    private void playSound(String rating) {
+        ToneGenerator tone = new ToneGenerator(AudioManager.STREAM_NOTIFICATION, 90);
+        int type = rating.equals("RUIM") ? ToneGenerator.TONE_PROP_NACK :
+                rating.equals("EXCELENTE") ? ToneGenerator.TONE_PROP_ACK : ToneGenerator.TONE_PROP_BEEP;
+        tone.startTone(type, rating.equals("RUIM") ? 550 : 260);
+        statusText.postDelayed(tone::release, 800);
+    }
+
+    private void speak(String message) {
         final TextToSpeech[] voice = new TextToSpeech[1];
         voice[0] = new TextToSpeech(this, status -> {
             if (status != TextToSpeech.SUCCESS) { toast("A voz do Android não está disponível."); return; }
             voice[0].setLanguage(new Locale("pt", "BR"));
             voice[0].setSpeechRate(1.18f);
-            voice[0].speak(sample.speech(), TextToSpeech.QUEUE_FLUSH, null, "teste");
+            voice[0].speak(message, TextToSpeech.QUEUE_FLUSH, null, "print");
         });
     }
 

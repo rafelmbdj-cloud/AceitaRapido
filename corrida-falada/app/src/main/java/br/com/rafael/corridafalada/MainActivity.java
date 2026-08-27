@@ -12,7 +12,7 @@ import java.util.Locale;
 
 public final class MainActivity extends Activity {
     private AppPrefs prefs;
-    private TextView packageText, statusText;
+    private TextView statusText;
     private Switch enabled, ocr;
 
     @Override public void onCreate(Bundle state) {
@@ -27,24 +27,15 @@ public final class MainActivity extends Activity {
         title.setTextColor(Color.rgb(7, 105, 45)); root.addView(title);
         root.addView(text("Analisa a corrida, mostra a faixa colorida, toca um alerta e fala o bairro. Nunca aceita nem recusa.", 16, false));
 
-        Button accessibility = button("1. Abrir Acessibilidade");
+        Button accessibility = button("ATIVAR PERMISSÃO DE ACESSIBILIDADE");
         accessibility.setOnClickListener(v -> startActivity(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)));
         root.addView(accessibility);
 
-        Button choose = button("2. Usar último aplicativo aberto");
-        choose.setOnClickListener(v -> {
-            String last = prefs.lastPackage();
-            if (last.isBlank() || last.equals(getPackageName())) toast("Abra primeiro o aplicativo de corridas e volte aqui.");
-            else { prefs.target(last); packageText.setText("Aplicativo selecionado: " + last); }
-        });
-        root.addView(choose);
-
-        packageText = text("Aplicativo selecionado: " + shownTarget(), 14, false); root.addView(packageText);
+        root.addView(text("Não precisa escolher o Rapidocar. Quando uma oferta aparecer, o aplicativo reconhece automaticamente.", 15, true));
         ocr = new Switch(this); ocr.setText("Usar OCR quando os textos não estiverem acessíveis");
         ocr.setChecked(prefs.ocr()); ocr.setOnCheckedChangeListener((v,on) -> prefs.ocr(on)); root.addView(ocr);
         enabled = new Switch(this); enabled.setText("Ativar análise de corridas"); enabled.setTextSize(18);
         enabled.setChecked(prefs.enabled()); enabled.setOnCheckedChangeListener((v,on) -> {
-            if (on && prefs.target().isBlank()) { v.setChecked(false); toast("Escolha primeiro o aplicativo de corridas."); return; }
             prefs.enabled(on); prefs.status(on ? "Ativado; aguardando oferta" : "Desativado"); refresh();
         }); root.addView(enabled);
 
@@ -73,8 +64,7 @@ public final class MainActivity extends Activity {
     }
 
     @Override protected void onResume() { super.onResume(); if (statusText != null) refresh(); }
-    private void refresh() { statusText.setText("Status: " + prefs.status()); packageText.setText("Aplicativo selecionado: " + shownTarget()); }
-    private String shownTarget() { return prefs.target().isBlank() ? "nenhum" : prefs.target(); }
+    private void refresh() { statusText.setText("Status: " + prefs.status()); }
     private TextView text(String value,int size,boolean bold){TextView v=new TextView(this);v.setText(value);v.setTextSize(size);v.setPadding(0,dp(7),0,dp(7));if(bold)v.setTypeface(null,1);return v;}
     private Button button(String value){Button b=new Button(this);b.setText(value);b.setAllCaps(false);b.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.WRAP_CONTENT));return b;}
     private int dp(int value){return Math.round(value*getResources().getDisplayMetrics().density);}

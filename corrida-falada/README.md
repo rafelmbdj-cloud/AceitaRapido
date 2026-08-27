@@ -4,6 +4,8 @@ Aplicativo Android que lê uma oferta por acessibilidade e, quando necessário,
 usa captura autorizada e OCR em memória. Calcula o valor por quilômetro, mostra
 uma faixa colorida, toca alertas diferentes e fala o bairro ou a rua.
 **Não executa cliques e não aceita nem recusa corridas.**
+Não é necessário selecionar o pacote do aplicativo de corridas: uma oferta é
+identificada automaticamente pela combinação de valor, quilômetros e botão de aceitar.
 
 - Excelente (verde): acima de R$ 3,00/km
 - Boa (amarela): de R$ 2,00 a R$ 3,00/km

@@ -48,14 +48,24 @@ public final class RideVoiceService extends AccessibilityService implements Text
         if (prefs == null) prefs = new AppPrefs(this);
         String pkg = event.getPackageName().toString();
         if (!pkg.equals(getPackageName())) prefs.lastPackage(pkg);
-        if (!prefs.enabled() || !pkg.equals(prefs.target())) return;
+        if (!prefs.enabled() || pkg.equals(getPackageName()) || isSystemPackage(pkg)) return;
         long now = SystemClock.elapsedRealtime(); if (now - lastScan < 300) return; lastScan = now;
 
         String accessible = collectAllText();
         RecognizedOffer offer = OfferParser.parse(accessible);
         if (offer.isComplete()) { speakOnce(offer, "Acessibilidade"); return; }
-        if (prefs.ocr() && Build.VERSION.SDK_INT >= 30 && now - lastScan >= 0) takeOcrScreenshot();
-        else prefs.status("Oferta detectada; aguardando dados completos");
+        if (looksLikeRide(accessible) && prefs.ocr() && Build.VERSION.SDK_INT >= 30) takeOcrScreenshot();
+    }
+
+    private boolean looksLikeRide(String text) {
+        String upper = text == null ? "" : text.toUpperCase(Locale.ROOT);
+        return upper.contains("R$") && upper.contains("KM") &&
+                (upper.contains("ACEITAR") || upper.contains("MOTORISTA") || upper.contains("COLETA"));
+    }
+
+    private boolean isSystemPackage(String pkg) {
+        return pkg.startsWith("com.android.") || pkg.startsWith("android") ||
+                pkg.startsWith("com.google.android") || pkg.startsWith("com.samsung.android");
     }
 
     private String collectAllText() {

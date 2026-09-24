@@ -48,6 +48,24 @@ class MainActivity : Activity() {
             startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
         }
 
+        findViewById<Button>(R.id.testOverlayButton).setOnClickListener {
+            val service = RideAccessibilityService.instance
+            if (service == null) {
+                Toast.makeText(
+                    this,
+                    "Ative primeiro a acessibilidade do Corrida Certa.",
+                    Toast.LENGTH_LONG
+                ).show()
+            } else {
+                service.showTestOverlay()
+                Toast.makeText(
+                    this,
+                    "Faixa do Corrida Certa exibida por 5 segundos.",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        }
+
         findViewById<Button>(R.id.saveButton).setOnClickListener {
             val g = parse(goodRate.text.toString(), 1.70)
             val e = parse(excellentRate.text.toString(), 2.50)

@@ -174,7 +174,7 @@ class OverlayController(private val service: AccessibilityService) {
         ).apply {
             gravity = Gravity.TOP
             x = 0
-            y = dp(4)
+            this.y = dp(4)
         }
 
         windowManager.addView(container, params)

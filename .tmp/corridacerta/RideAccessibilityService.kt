@@ -1,27 +1,25 @@
 package com.rafael.radarcorrida
 
 import android.accessibilityservice.AccessibilityService
+import android.media.AudioManager
+import android.media.ToneGenerator
 import android.os.Handler
 import android.os.Looper
-import android.speech.tts.TextToSpeech
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
-import java.util.Locale
 
-class RideAccessibilityService : AccessibilityService(), TextToSpeech.OnInitListener {
+class RideAccessibilityService : AccessibilityService() {
     private lateinit var overlay: OverlayController
-    private var tts: TextToSpeech? = null
     private val handler = Handler(Looper.getMainLooper())
     private var pending: Runnable? = null
     private var lastSignature = ""
-    private var lastSpokenAt = 0L
-    private var ttsReady = false
+    private var tone: ToneGenerator? = null
 
     override fun onServiceConnected() {
         super.onServiceConnected()
         instance = this
         overlay = OverlayController(this)
-        tts = TextToSpeech(this, this)
+        tone = ToneGenerator(AudioManager.STREAM_NOTIFICATION, 85)
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
@@ -44,41 +42,54 @@ class RideAccessibilityService : AccessibilityService(), TextToSpeech.OnInitList
             return
         }
 
-        val signature = "${offer.appName}-${offer.fare}-${offer.totalDistanceKm}-${offer.pickupDistanceKm}-${offer.tripDistanceKm}"
+        val signature =
+            "${offer.appName}-${offer.fare}-${offer.totalDistanceKm}-${offer.pickupDistanceKm}-${offer.tripDistanceKm}"
+
         overlay.show(offer)
 
         if (signature != lastSignature) {
             lastSignature = signature
-            speak(offer)
+            playAlert(offer.classification)
         }
     }
 
     fun showTestOverlay() {
         if (!::overlay.isInitialized) return
         val testOffer = RideOffer(
-            appName = "TESTE",
-            fare = 12.00,
-            totalDistanceKm = 4.3,
-            pickupDistanceKm = 3.2,
-            tripDistanceKm = 1.1,
-            totalMinutes = 8,
-            ratePerKm = 2.07,
-            ratePerHour = 66.38,
-            netProfit = 5.41,
-            score = 87,
+            appName = "99",
+            fare = 11.40,
+            totalDistanceKm = 2.3,
+            pickupDistanceKm = null,
+            tripDistanceKm = 2.3,
+            totalMinutes = 6,
+            ratePerKm = 4.96,
+            ratePerHour = 114.00,
+            netProfit = 9.56,
+            score = 0,
             classification = Classification.NORMAL,
             sourceText = "Teste da faixa Corrida Certa"
         )
         overlay.show(testOffer)
-        if (AppConfig.voiceEnabled(this) && ttsReady) {
-            tts?.speak(
-                "Corrida Certa. Teste da faixa. Corrida normal.",
-                TextToSpeech.QUEUE_FLUSH,
-                null,
-                "overlay-test"
-            )
-        }
+        playAlert(Classification.NORMAL)
         handler.postDelayed({ if (::overlay.isInitialized) overlay.hide() }, 5000)
+    }
+
+    private fun playAlert(classification: Classification) {
+        // O antigo botão de voz agora controla somente os bipes.
+        if (!AppConfig.voiceEnabled(this)) return
+
+        when (classification) {
+            Classification.BAD -> Unit
+            Classification.NORMAL -> {
+                tone?.startTone(ToneGenerator.TONE_PROP_BEEP, 140)
+            }
+            Classification.EXCELLENT -> {
+                tone?.startTone(ToneGenerator.TONE_PROP_BEEP, 120)
+                handler.postDelayed({
+                    tone?.startTone(ToneGenerator.TONE_PROP_BEEP, 120)
+                }, 230)
+            }
+        }
     }
 
     private fun collectTexts(node: AccessibilityNodeInfo?, out: MutableList<String>) {
@@ -88,41 +99,13 @@ class RideAccessibilityService : AccessibilityService(), TextToSpeech.OnInitList
         for (i in 0 until node.childCount) collectTexts(node.getChild(i), out)
     }
 
-    private fun speak(offer: RideOffer) {
-        if (!AppConfig.voiceEnabled(this) || !ttsReady) return
-        val now = System.currentTimeMillis()
-        if (now - lastSpokenAt < 4000) return
-        lastSpokenAt = now
-
-        val phrase = buildString {
-            append("Corrida Certa, ")
-            append(offer.classification.label.lowercase())
-            append(", ")
-            append(String.format(Locale("pt", "BR"), "%.2f reais por quilômetro", offer.ratePerKm))
-            offer.pickupDistanceKm?.let {
-                append(", coleta ")
-                append(String.format(Locale("pt", "BR"), "%.1f quilômetros", it))
-            }
-            append(", lucro estimado ")
-            append(String.format(Locale("pt", "BR"), "%.2f reais", offer.netProfit))
-        }
-        tts?.speak(phrase, TextToSpeech.QUEUE_FLUSH, null, "ride-analysis")
-    }
-
-    override fun onInit(status: Int) {
-        if (status == TextToSpeech.SUCCESS) {
-            tts?.language = Locale("pt", "BR")
-            ttsReady = true
-        }
-    }
-
     override fun onInterrupt() {}
 
     override fun onDestroy() {
         pending?.let(handler::removeCallbacks)
         if (::overlay.isInitialized) overlay.destroy()
-        tts?.stop()
-        tts?.shutdown()
+        tone?.release()
+        tone = null
         if (instance === this) instance = null
         super.onDestroy()
     }

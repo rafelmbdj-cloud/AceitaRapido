@@ -40,22 +40,7 @@ jobs:
       - name: Align JVM target
         shell: bash
         run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          p=Path("/tmp/radar-src/radar_corrida/app/build.gradle.kts")
-          s=p.read_text()
-          needle='    compileSdk = 35\n'
-          patch='''    compileSdk = 35
-
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-    }
-'''
-          if needle not in s:
-              raise SystemExit("compileSdk marker not found")
-          p.write_text(s.replace(needle, patch, 1))
-          PY
+          python3 -c 'from pathlib import Path; p=Path("/tmp/radar-src/radar_corrida/app/build.gradle.kts"); s=p.read_text(); old="    compileSdk = 35\n"; new="    compileSdk = 35\n\n    compileOptions {\n        sourceCompatibility = JavaVersion.VERSION_17\n        targetCompatibility = JavaVersion.VERSION_17\n    }\n"; assert old in s; p.write_text(s.replace(old,new,1))'
 
       - uses: gradle/actions/setup-gradle@v4
         with:

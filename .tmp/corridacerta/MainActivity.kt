@@ -19,6 +19,7 @@ class MainActivity : Activity() {
     private lateinit var statusDot: TextView
     private lateinit var statusBox: LinearLayout
     private lateinit var accessibilityButton: Button
+    private lateinit var trialText: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -31,6 +32,8 @@ class MainActivity : Activity() {
         statusDot = findViewById(R.id.statusDot)
         statusBox = findViewById(R.id.statusBox)
         accessibilityButton = findViewById(R.id.accessibilityButton)
+        trialText = findViewById(R.id.trialText)
+        TrialManager.ensureStarted(this)
 
         val goodRate = findViewById<EditText>(R.id.goodRateInput)
         val excellentRate = findViewById<EditText>(R.id.excellentRateInput)
@@ -49,6 +52,15 @@ class MainActivity : Activity() {
         }
 
         findViewById<Button>(R.id.testOverlayButton).setOnClickListener {
+            if (!TrialManager.isActive(this)) {
+                Toast.makeText(
+                    this,
+                    "O período de teste de 90 dias terminou.",
+                    Toast.LENGTH_LONG
+                ).show()
+                return@setOnClickListener
+            }
+
             val service = RideAccessibilityService.instance
             if (service == null) {
                 Toast.makeText(
@@ -92,6 +104,23 @@ class MainActivity : Activity() {
     }
 
     private fun updateStatus() {
+        val days = TrialManager.daysRemaining(this)
+        val activeTrial = TrialManager.isActive(this)
+
+        if (!activeTrial) {
+            trialText.text = "Teste gratuito encerrado"
+            trialText.setTextColor(Color.parseColor("#B42318"))
+            statusText.text = "TESTE ENCERRADO"
+            statusHelp.text = "Os 90 dias de teste terminaram. A análise das corridas está pausada."
+            statusDot.setTextColor(Color.parseColor("#F04438"))
+            statusBox.setBackgroundColor(Color.parseColor("#FEF3F2"))
+            accessibilityButton.text = "GERENCIAR ACESSIBILIDADE"
+            return
+        }
+
+        trialText.text = "Teste gratuito: $days dias restantes"
+        trialText.setTextColor(Color.parseColor("#027A48"))
+
         val enabled = isAccessibilityEnabled()
         if (enabled) {
             statusText.text = "Leitura ATIVA"

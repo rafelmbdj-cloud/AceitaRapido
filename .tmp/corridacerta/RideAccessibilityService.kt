@@ -20,9 +20,15 @@ class RideAccessibilityService : AccessibilityService() {
         instance = this
         overlay = OverlayController(this)
         tone = ToneGenerator(AudioManager.STREAM_NOTIFICATION, 85)
+        TrialManager.ensureStarted(this)
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
+        if (!TrialManager.isActive(this)) {
+            if (::overlay.isInitialized) overlay.hide()
+            return
+        }
+
         val pkg = event?.packageName?.toString() ?: return
         if (pkg == packageName) return
 
@@ -54,6 +60,7 @@ class RideAccessibilityService : AccessibilityService() {
     }
 
     fun showTestOverlay() {
+        if (!TrialManager.isActive(this)) return
         if (!::overlay.isInitialized) return
         val testOffer = RideOffer(
             appName = "99",

@@ -43,6 +43,18 @@
                 android:text="Rapidocar • 99 • Uber"
                 android:textColor="#DCE8FF"
                 android:textSize="14sp" />
+
+            <TextView
+                android:id="@+id/trialText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:background="#EAFBF2"
+                android:padding="10dp"
+                android:text="Teste gratuito: 90 dias restantes"
+                android:textColor="#027A48"
+                android:textSize="14sp"
+                android:textStyle="bold" />
         </LinearLayout>
 
         <LinearLayout
@@ -338,7 +350,7 @@
             android:layout_marginTop="14dp"
             android:layout_marginRight="22dp"
             android:gravity="center"
-            android:text="Corrida Certa • versão 0.6 de teste
+            android:text="Corrida Certa • versão 0.8 • teste de 90 dias
 Você continua decidindo se aceita ou recusa a corrida."
             android:textColor="#98A2B3"
             android:textSize="12sp" />

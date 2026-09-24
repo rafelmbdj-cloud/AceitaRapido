@@ -1,0 +1,53 @@
+name: Build Radar Corrida APK
+
+on:
+  push:
+    branches:
+      - build-radar-apk
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Reconstruct project
+        shell: bash
+        run: |
+          cat .tmp/radar.part1 .tmp/radar.part2 .tmp/radar.part3 .tmp/radar.part4 .tmp/radar.part5 .tmp/radar.part6 .tmp/radar.part7 > /tmp/radar.b64
+          base64 -d /tmp/radar.b64 > /tmp/radar.zip
+          mkdir -p /tmp/radar-src
+          unzip -q /tmp/radar.zip -d /tmp/radar-src
+          test -f /tmp/radar-src/radar_corrida/settings.gradle.kts
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK
+        shell: bash
+        run: |
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager "platforms;android-35" "build-tools;35.0.0"
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+
+      - name: Build debug APK
+        working-directory: /tmp/radar-src/radar_corrida
+        run: gradle :app:assembleDebug --stacktrace
+
+      - name: Rename APK
+        shell: bash
+        run: cp /tmp/radar-src/radar_corrida/app/build/outputs/apk/debug/app-debug.apk /tmp/Radar-Corrida-v0.2-debug.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Radar-Corrida-v0.2-APK
+          path: /tmp/Radar-Corrida-v0.2-debug.apk
+          retention-days: 1

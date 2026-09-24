@@ -118,6 +118,26 @@
                 android:textColor="#174EA6"
                 android:textSize="14sp"
                 android:textStyle="bold" />
+
+            <Button
+                android:id="@+id/testOverlayButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:backgroundTint="#2563EB"
+                android:minHeight="50dp"
+                android:text="TESTAR FAIXA DO CORRIDA CERTA"
+                android:textColor="#FFFFFF"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:text="Mostra por 5 segundos a faixa escura escrita CORRIDA CERTA com o semáforo. Assim você sabe qual faixa é deste aplicativo."
+                android:textColor="#667085"
+                android:textSize="12sp" />
         </LinearLayout>
 
         <LinearLayout
@@ -293,7 +313,7 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="A faixa colorida continuará aparecendo no topo da tela quando uma oferta for lida."
+                android:text="A faixa deste app é escura, escrita CORRIDA CERTA e tem um semáforo pequeno: vermelho, amarelo ou verde."
                 android:textColor="#98A2B3"
                 android:textSize="12sp" />
         </LinearLayout>
@@ -318,7 +338,7 @@
             android:layout_marginTop="14dp"
             android:layout_marginRight="22dp"
             android:gravity="center"
-            android:text="Corrida Certa • versão 0.3 de teste
+            android:text="Corrida Certa • versão 0.5 de teste
 Você continua decidindo se aceita ou recusa a corrida."
             android:textColor="#98A2B3"
             android:textSize="12sp" />

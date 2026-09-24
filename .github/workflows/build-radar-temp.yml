@@ -1,9 +1,9 @@
-name: Build Corrida Certa APK
+name: Build Corrida Certa v0.4 APK
 
 on:
   push:
     branches:
-      - build-corrida-certa-apk
+      - build-corrida-certa-v04b
 
 jobs:
   build:
@@ -24,18 +24,20 @@ jobs:
           unzip -q /tmp/radar.zip -d /tmp/radar-src
           test -f /tmp/radar-src/radar_corrida/settings.gradle.kts
 
-      - name: Apply Corrida Certa design
+      - name: Apply Corrida Certa v0.4 design
         shell: bash
         run: |
           cp .tmp/corridacerta/MainActivity.kt /tmp/radar-src/radar_corrida/app/src/main/java/com/rafael/radarcorrida/MainActivity.kt
           cp .tmp/corridacerta/activity_main.xml /tmp/radar-src/radar_corrida/app/src/main/res/layout/activity_main.xml
+          cp .tmp/corridacerta/OverlayController.kt /tmp/radar-src/radar_corrida/app/src/main/java/com/rafael/radarcorrida/OverlayController.kt
           python3 - <<'PY'
           from pathlib import Path
+
           gradle = Path("/tmp/radar-src/radar_corrida/app/build.gradle.kts")
           s = gradle.read_text()
           s = s.replace('applicationId = "com.rafael.radarcorrida"', 'applicationId = "com.rafael.corridacerta"')
-          s = s.replace('versionCode = 2', 'versionCode = 3')
-          s = s.replace('versionName = "0.2.0"', 'versionName = "0.3.0"')
+          s = s.replace('versionCode = 2', 'versionCode = 4')
+          s = s.replace('versionName = "0.2.0"', 'versionName = "0.4.0"')
           gradle.write_text(s)
 
           manifest = Path("/tmp/radar-src/radar_corrida/app/src/main/AndroidManifest.xml")
@@ -44,6 +46,15 @@ jobs:
           m = m.replace('android:name=".MainActivity"', 'android:name="com.rafael.radarcorrida.MainActivity"')
           m = m.replace('android:name=".RideAccessibilityService"', 'android:name="com.rafael.radarcorrida.RideAccessibilityService"')
           manifest.write_text(m)
+
+          layout = Path("/tmp/radar-src/radar_corrida/app/src/main/res/layout/activity_main.xml")
+          x = layout.read_text()
+          x = x.replace(
+              'A faixa colorida continuará aparecendo no topo da tela quando uma oferta for lida.',
+              'No topo aparece uma faixa escura escrita CORRIDA CERTA, com um semáforo vermelho, amarelo ou verde.'
+          )
+          x = x.replace('Corrida Certa • versão 0.3 de teste', 'Corrida Certa • versão 0.4 de teste')
+          layout.write_text(x)
           PY
 
       - uses: actions/setup-java@v5
@@ -74,10 +85,10 @@ jobs:
 
       - name: Rename APK
         shell: bash
-        run: cp /tmp/radar-src/radar_corrida/app/build/outputs/apk/debug/app-debug.apk /tmp/Corrida-Certa-v0.3-debug.apk
+        run: cp /tmp/radar-src/radar_corrida/app/build/outputs/apk/debug/app-debug.apk /tmp/Corrida-Certa-v0.4-debug.apk
 
       - uses: actions/upload-artifact@v4
         with:
-          name: Corrida-Certa-v0.3-APK
-          path: /tmp/Corrida-Certa-v0.3-debug.apk
+          name: Corrida-Certa-v0.4-APK
+          path: /tmp/Corrida-Certa-v0.4-debug.apk
           retention-days: 1

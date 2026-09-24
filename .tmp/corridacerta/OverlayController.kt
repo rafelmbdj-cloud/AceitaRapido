@@ -31,7 +31,7 @@ class OverlayController(private val service: AccessibilityService) {
         updateTrafficLight(offer.classification)
 
         titleView?.text =
-            "${offer.classification.label.uppercase()}  •  Nota ${offer.score}  •  R$ ${fmt(offer.ratePerKm)}/km"
+            "${offer.classification.label.uppercase()}  •  R$ ${fmt(offer.fare)}  •  R$ ${fmt(offer.ratePerKm)}/km"
 
         val routeParts = mutableListOf<String>()
         offer.pickupDistanceKm?.let { routeParts += "Coleta ${fmt1(it)} km" }

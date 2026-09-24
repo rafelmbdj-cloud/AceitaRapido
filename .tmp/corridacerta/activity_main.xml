@@ -295,7 +295,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Som e avisos"
+                android:text="Aviso sonoro"
                 android:textColor="#101828"
                 android:textSize="19sp"
                 android:textStyle="bold" />
@@ -306,14 +306,14 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:minHeight="52dp"
-                android:text="Falar a análise em voz alta"
+                android:text="Bipes para corridas boas"
                 android:textColor="#344054"
                 android:textSize="15sp" />
 
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="A faixa deste app é escura, escrita CORRIDA CERTA e tem um semáforo pequeno: vermelho, amarelo ou verde."
+                android:text="Sem voz. Corrida normal: 1 bipe. Corrida excelente: 2 bipes curtos. Corrida ruim: sem som."
                 android:textColor="#98A2B3"
                 android:textSize="12sp" />
         </LinearLayout>
@@ -338,7 +338,7 @@
             android:layout_marginTop="14dp"
             android:layout_marginRight="22dp"
             android:gravity="center"
-            android:text="Corrida Certa • versão 0.5 de teste
+            android:text="Corrida Certa • versão 0.6 de teste
 Você continua decidindo se aceita ou recusa a corrida."
             android:textColor="#98A2B3"
             android:textSize="12sp" />
